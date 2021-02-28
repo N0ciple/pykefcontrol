@@ -198,7 +198,7 @@ class KefConnector():
         Get song title, album and artist
         """
         song_data = self._get_player_data()
-        title = song_data.get('rackRoles', {}).get('title')
+        title = song_data.get('trackRoles', {}).get('title')
         artist = song_data.get('trackRoles', {}).get('mediaData',{}).get('metaData',{}).get('artist')
         album = song_data.get('trackRoles',{}).get('mediaData',{}).get('metaData',{}).get('album')
         return title, artist, album
