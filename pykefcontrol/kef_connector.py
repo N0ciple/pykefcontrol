@@ -87,7 +87,7 @@ class KefConnector():
         payload = {
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
-             "value": """{{"type":"kefSpeakerStatus","kefSpeakerStatus":"{status}"}}""".format(status=status)
+             "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{status}"}}""".format(status=status)
         }
 
         with requests.get( "http://" + self.host +"/api/setData", params=payload) as response :
