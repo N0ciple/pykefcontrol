@@ -15,7 +15,7 @@ pip install pykefcontrol
 You can make sure you have the last version by typing :
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the last version is version `0.1`
+Currently, the last version is version `0.2`
 
 ## ⚙️ Usage
 
