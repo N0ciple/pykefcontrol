@@ -7,7 +7,7 @@ This library works with the KEF LS50 Wireless II only. If you are searching a li
 ## ⬇️ Installation 
 To install pykefcontrol, you can use pip : 
 ```shell
-pip install pykefcontrol`
+pip install pykefcontrol
 ```
 
 You can make sure you have the last version by typing :
