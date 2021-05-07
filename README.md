@@ -1,6 +1,8 @@
 # 🔉 pykefcontrol 
 Python library for controling the KEF LS50 Wireless II
 
+
+
 ## 📄 General Informations 
 This library works with the KEF LS50 Wireless II only. If you are searching a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef)
 
@@ -127,3 +129,10 @@ my_speaker._get_player_data()
 # (output example) >>> {'trackRoles': {'icon': 'http://www.xxx.yyy.zzz:80/file/stream//tmp/temp_data_airPlayAlbum_xxxxxxxxx', 'title': 'I Want To Break Free', 'mediaData': {'resources': [{'duration': 263131}], 'metaData': {'album': 'Greatest Hits', 'artist': 'Queen'}}}, 'playId': {'systemMemberId': 'kef_one-xxxxxxxx', 'timestamp': 676181357}, 'mediaRoles': {'audioType': 'audioBroadcast', 'title': 'AirPlay', 'doNotTrack': True, 'type': 'audio', 'mediaData': {'resources': [{'mimeType': 'audio/unknown', 'uri': 'airplay://'}], 'metaData': {'serviceID': 'airplay', 'live': True, 'playLogicPath': 'airplay:playlogic'}}}, 'state': 'playing', 'status': {'duration': 263131, 'playSpeed': 1}, 'controls': {'pause': True, 'next_': True, 'previous': True}}
 
 ```
+
+## 📜 Changelog
+- ''Version 0.2**
+  - correct a bug in `power_on` and `shutdown` 
+
+- **Version 0.1**
+  - first version
