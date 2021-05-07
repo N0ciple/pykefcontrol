@@ -1,16 +1,5 @@
 import requests
 
-IP_ADDRESS = "192.168.124.40"
-
-
-def get_status():
-    url = "http://"+IP_ADDRESS
-    with requests.get(url+"/api/getData?path=settings:/kef/host/speakerStatus&roles=value") as response:
-        json_resp = response.json()
-    print("JSON",json_resp)
-
-
-
 class KefConnector():
     def __init__(self, host):
         self.host = host
@@ -202,11 +191,3 @@ class KefConnector():
         artist = song_data.get('trackRoles', {}).get('mediaData',{}).get('metaData',{}).get('artist')
         album = song_data.get('trackRoles',{}).get('mediaData',{}).get('metaData',{}).get('album')
         return title, artist, album
-
-if __name__ == "__main__":
-    print("Main execution")
-    kef_speaker = KefConnector(IP_ADDRESS)
-    print("KEF Speaker status:", kef_speaker.status)
-    print("KEF Speaker source:", kef_speaker.source)
-    kef_speaker.source = "wifi"
-
