@@ -1,7 +1,17 @@
 # 🔉 pykefcontrol 
 Python library for controling the KEF LS50 Wireless II
 
-
+- [🔉 pykefcontrol](#-pykefcontrol)
+  - [📄 General Informations](#-general-informations)
+  - [⬇️ Installation](#️-installation)
+  - [⚙️ Usage](#️-usage)
+    - [👨‍💻 Get the IP address](#-get-the-ip-address)
+    - [🎚️ Control the speaker with pykefcontrol](#️-control-the-speaker-with-pykefcontrol)
+      - [First Step](#first-step)
+      - [Available features](#available-features)
+      - [Advanced features](#advanced-features)
+  - [📜 Changelog](#-changelog)
+  
 
 ## 📄 General Informations 
 This library works with the KEF LS50 Wireless II only. If you are searching a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef)
@@ -131,6 +141,7 @@ my_speaker._get_player_data()
 ```
 
 ## 📜 Changelog
+
 - ''Version 0.2**
   - correct a bug in `power_on` and `shutdown` 
 
