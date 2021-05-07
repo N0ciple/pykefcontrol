@@ -1,22 +1,23 @@
-# pykefcontrol
+# 🔉 pykefcontrol 
 Python library for controling the KEF LS50 Wireless II
 
-## General Informations
+## 📄 General Informations 
 This library works with the KEF LS50 Wireless II only. If you are searching a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef)
 
-## Installation
-
+## ⬇️ Installation 
 To install pykefcontrol, you can use pip : 
-`pip install pykefcontrol`
+```shell
+pip install pykefcontrol`
+```
 
 You can make sure you have the last version by typing :
 `>>> print(pykefcontrol.__version__)`
 
 Currently, the last version is version `0.1`
 
-## Usage
+## ⚙️ Usage
 
-### Get the IP address
+### 👨‍💻 Get the IP address
  In order to use the pykefcontrol library, you need to know the IP address of your speakers. To do so, you can have a look at your router web page, or check in the KEF Connect app by doing the following :
  1. Launch the KEF Connect app
  2. Tap the gear icon on the bottom right
@@ -24,7 +25,7 @@ Currently, the last version is version `0.1`
  4. Finally the little circled "i" next to your speaker name in the _My Speakers_ section
  5. You should find your IP address in the "IP address" section under the form `www.xxx.yyy.zzz`, where `www`,`xxx`,`yyy` and `zzz` are integers between `0` and `255`.
 
-### Control the speaker with pykefcontrol
+### 🎚️ Control the speaker with pykefcontrol
 Once pykefcontrol is installed and you have your KEF Speaker IP address, you can use pykefcontrol in the following way :
 
 #### First Step
