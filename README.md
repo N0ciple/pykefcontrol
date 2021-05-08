@@ -117,7 +117,7 @@ my_speaker.is_playing # it is not a method so it does not requires parenthesis
 
 # Get current media information : it retuns a tuple of string ('title','artist','album')
 # (works on songs/podcast/radio. It may works on other media but I have not tested it yet)
-my_speaker.get_song_information
+my_speaker.get_song_information()
 # (output example) >>> ('Money','Pink Floyd','The Dark Side of the Moon')
 
 # Get media length in miliseconds : it returns a integer representing the song length in ms
@@ -131,7 +131,7 @@ my_speaker.song_status # it is not a method so it does not requires parenthesis
 
 
 #### Advanced features
-These function are used internally by pykefcontrol and return a json output with a lot of informations. You might want to use them to get extra information such as the artwork/album cover URL, wich is not currently supported in pykefcontrol
+This function is used internally by pykefcontrol and return a json output with a lot of informations. You might want to use them to get extra information such as the artwork/album cover URL, wich does not have a dedicated function _yet_ in pykefcontrol.
 
 ```python
 # Get currently playing media information
@@ -142,7 +142,7 @@ my_speaker._get_player_data()
 
 ## 📜 Changelog
 
-- ''Version 0.2**
+- **Version 0.2**
   - correct a bug in `power_on` and `shutdown` 
 
 - **Version 0.1**
