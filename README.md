@@ -1,5 +1,7 @@
 # 🔉 pykefcontrol 
-Python library for controling the KEF LS50 Wireless II
+Python library for controlling the KEF LS50 Wireless II
+
+⚠️ **Read changelog to see breaking changes**
 
 - [🔉 pykefcontrol](#-pykefcontrol)
   - [📄 General Informations](#-general-informations)
@@ -14,7 +16,7 @@ Python library for controling the KEF LS50 Wireless II
   
 
 ## 📄 General Informations 
-This library works with the KEF LS50 Wireless II only. If you are searching a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef)
+This library works with the KEF LS50 Wireless II only. If you are searching for a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef)
 
 ## ⬇️ Installation 
 To install pykefcontrol, you can use pip : 
@@ -25,7 +27,7 @@ pip install pykefcontrol
 You can make sure you have the last version by typing :
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the last version is version `0.2`
+Currently, the last version is version `0.3`
 
 ## ⚙️ Usage
 
@@ -47,7 +49,7 @@ First, import the class and create a `KefConnector` object :
 from pykefcontrol.kef_connector import KefConnector
 my_speaker = KefConnector("www.xxx.yyy.zzz")
 ```
-⚠️ Dont forget to replace `www.xxx.yyy.zzz` by your speaker IP address. You should give your IP address as a string. It's to say that you should leave the quotation marks `"` arround the IP address
+⚠️ Do not forget to replace `www.xxx.yyy.zzz` by your speaker IP address. You should give your IP address as a string. It's to say that you should leave the quotation marks `"` around the IP address
 
 #### Available features
 Once the `my_speaker` object is created, you can use it in the following ways :
@@ -64,6 +66,17 @@ my_speaker.shutdown()
 my_speaker.status # it is not a method so it does not requires parenthesis
 # (output example) >>> 'powerOn'
 
+```
+
+**Speaker Info**
+```python
+# Get the speaker MAC hardress
+my_speaker.mac_address
+# (output example) >>> 'AB:CD:EF:12:13:45'
+
+# Get the speaker friendly name if configured
+my_speaker.speaker_name
+# (output example) >>> 'My Kef LS50W2'
 ```
 
 **Source Control**
@@ -99,7 +112,7 @@ my_speaker.mute()
 my_speaker.unmute()
 
 # Get volume : it reruns an integer between 0 and 100
-my_speaker.volume # it is not a method so it does not requires parenthesis
+my_speaker.volume # it is not a method so it does not require parenthesis
 # (output example) >>> 23
 
 # Set volume
@@ -112,20 +125,20 @@ my_speaker.set_volume(42) # 42 for example but it can by any integer between 0 a
 **Playback info**
 ```python
 # Check if the speaker is playing : it returns a boolean (either True or False)
-my_speaker.is_playing # it is not a method so it does not requires parenthesis
+my_speaker.is_playing # it is not a method so it does not require parenthesis
 # (output example) >>> True
 
-# Get current media information : it retuns a tuple of string ('title','artist','album')
+# Get current media information : it retuns a dictionnary 
 # (works on songs/podcast/radio. It may works on other media but I have not tested it yet)
 my_speaker.get_song_information()
-# (output example) >>> ('Money','Pink Floyd','The Dark Side of the Moon')
+# (output example) >>> {'title':'Money','artist':'Pink Floyd','album':'The Dark Side of the Moon','cover_url':'http://cover.url'}
 
-# Get media length in miliseconds : it returns a integer representing the song length in ms
-my_speaker.song_length # it is not a method so it does not requires parenthesis
+# Get media length in miliseconds : it returns an integer representing the song length in ms
+my_speaker.song_length # it is not a method so it does not require parenthesis
 # (output example) >>> 300251
 
 # Get song progress : it returns the current playhead position in the current track in ms
-my_speaker.song_status # it is not a method so it does not requires parenthesis
+my_speaker.song_status # it is not a method so it does not require parenthesis
 # (output example) >>> 136900
 ```
 
@@ -141,6 +154,11 @@ my_speaker._get_player_data()
 ```
 
 ## 📜 Changelog
+
+- **Version 0.3**
+  - ⚠️ _Breaking change :_ `get_song_information()` now returns a dictionnary, no longer a tuple
+  - add property `mac_address` that returns the MAC adress of the speaker as a string
+  - add property `speaker_name` that returns the firendly speaker name as defined in the KEF Connect app onboarding process
 
 - **Version 0.2**
   - correct a bug in `power_on` and `shutdown` 
