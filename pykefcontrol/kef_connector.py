@@ -69,6 +69,33 @@ class KefConnector():
 
         return json_output[0]
 
+    @property
+    def mac_address(self):
+        """Get the mac address of the Speaker"""
+        """http://192.168.124.46/api/getData?path=settings:/system/primaryMacAddress&roles=value"""
+        payload = {
+            "path": "settings:/system/primaryMacAddress",
+            "roles": "value"
+        }
+        
+        with requests.get( "http://" + self.host + "/api/getData", params=payload) as response :
+            json_output = response.json()
+        
+        return json_output[0]["string_"]
+
+    @property
+    def speaker_name(self):
+        """Get the friendly name of the Speaker"""
+        payload = {
+            "path": "settings:/deviceName",
+            "roles": "value"
+        }
+        
+        with requests.get( "http://" + self.host + "/api/getData", params=payload) as response :
+            json_output = response.json()
+        
+        return json_output[0]["string_"]
+
     @property  
     def status(self):
         """Status of the speaker : standby or poweredOn"""
