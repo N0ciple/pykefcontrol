@@ -218,4 +218,6 @@ class KefConnector():
         info_dict["title"] = song_data.get('trackRoles', {}).get('title')
         info_dict["artist"] = song_data.get('trackRoles', {}).get('mediaData',{}).get('metaData',{}).get('artist')
         info_dict["album"] = song_data.get('trackRoles',{}).get('mediaData',{}).get('metaData',{}).get('album')
+        info_dict["cover_url"] = song_data.get('trackRoles',{}).get('icon',None)
+
         return info_dict
