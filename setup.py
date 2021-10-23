@@ -11,7 +11,7 @@ setup(
   url = 'https://github.com/rodupont/pykefcontrol',   
   keywords = ['Kef', 'Speaker', 'Wireless II', 'Wireless 2'],   
   install_requires=[          
-          'requests',
+          'requests>=2.26.0',
       ],
   classifiers=[
     'Development Status :: 3 - Alpha',      # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
