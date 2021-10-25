@@ -210,7 +210,7 @@ loop.run_until_complete(main())
 - volume : use `set_volume`
 - state : use `set_state`
 - source : use `set_source`
-- 
+
 ## 📜 Changelog
 
 - **Version 0.4**
