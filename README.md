@@ -2,6 +2,7 @@
 Python library for controlling the KEF LS50 Wireless II
 
 ⚠️ **Read changelog to see breaking changes**
+For the **async** version, please read 
 
 - [🔉 pykefcontrol](#-pykefcontrol)
   - [📄 General Informations](#-general-informations)
@@ -12,11 +13,14 @@ Python library for controlling the KEF LS50 Wireless II
       - [First Step](#first-step)
       - [Available features](#available-features)
       - [Advanced features](#advanced-features)
+  - [🕵️ Specificity of `KefAsyncConnector`](#️-specificity-of-kefasyncconnector)
+    - [Renaming of property setters](#renaming-of-property-setters)
   - [📜 Changelog](#-changelog)
   
 
 ## 📄 General Informations 
-This library works with the KEF LS50 Wireless II only. If you are searching for a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef)
+This library works with the KEF LS50 Wireless II only. If you are searching for a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef).
+Pykefcontrol has 2 main components: `KefConnector` and `KefAsyncConnector`. The first one can be used in all classic scripts and python programs, whereas the second one (`KefAsyncConnector`) can be used in asynchronous programs.
 
 ## ⬇️ Installation 
 To install pykefcontrol, you can use pip : 
@@ -27,7 +31,7 @@ pip install pykefcontrol
 You can make sure you have the last version by typing :
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the last version is version `0.3`
+Currently, the last version is version `0.4`
 
 ## ⚙️ Usage
 
@@ -44,6 +48,8 @@ Once pykefcontrol is installed and you have your KEF Speaker IP address, you can
 
 #### First Step
 
+☝️ _For the **async** version, please read the section_ [🕵️ Specificity of `KefAsyncConnector`](#️-specificity-of-kefasyncconnector).
+
 First, import the class and create a `KefConnector` object :
 ```python
 from pykefcontrol.kef_connector import KefConnector
@@ -52,6 +58,7 @@ my_speaker = KefConnector("www.xxx.yyy.zzz")
 ⚠️ Do not forget to replace `www.xxx.yyy.zzz` by your speaker IP address. You should give your IP address as a string. It's to say that you should leave the quotation marks `"` around the IP address
 
 #### Available features
+
 Once the `my_speaker` object is created, you can use it in the following ways :
 
 **Power, Shutdown and Status**
@@ -153,7 +160,61 @@ my_speaker._get_player_data()
 
 ```
 
+## 🕵️ Specificity of `KefAsyncConnector`
+
+Pykefcontrol offers an **asynchronous connector** with the same feature set as the synchronous connector. However, there is a few changes in the property setters. You can no longer use `my_speaker.volume = 28` to set a property. You have to use the setter like so: `await my_speaker.set_volume(28)`.
+
+The actions you make with `KefAsyncConnector` should be embedded in an async function. Here is a quick example :
+
+```python
+import asyncio
+from pykefcontrol.kef_connector import KefAsyncConnector
+
+# Define an async function
+async def main():
+  my_speaker = KefAsyncConnector("192.168.124.46")
+  # Get speaker name
+  print(await my_speaker.speaker_name)
+  # Get volume
+  print(await my_speaker.volume)
+
+  # Turn on speaker
+  await my_speaker.tunr_on()
+  # Toggle play/pause
+  await my_speaker.toggle_play_pause()
+
+  # Set volume
+  # Please read through to see precision about setters
+  await my_speaker.set_volume(28)
+  # Set source
+  await my_speaker.set_source("bluetooth")
+  # Set status
+  await my_speaker.set_status("powerOn")
+
+  # To avoid warning about an unclosed session
+  # once your program is over, run:
+  await my_speaker._session.close()
+  # This is not mandatory. But if you do not close 
+  # the session, you will have a warning.
+
+# Get loop
+loop = asyncio.get_event_loop()
+# Run main function in async context
+loop.run_until_complete(main())
+```
+### Renaming of property setters
+`KefAsyncConnector` has the same property and methods as its synchronous counterpart `KefConnector`. You can access the same properties and methods in an asynchronous context by using `await my_speaker.property` or `await my_speaker.method()`. For the list of available properties and methods, read [Available features](#available-features).
+
+**However**, in order to have an asynchronous property setter, the way to set a property has changed. You should use the specific setter. For a `property`, the setter is called `set_property`. As you can see in the example script above, to set the volume, use `set_volume`. Here is the list of properties with such setters : 
+
+- volume : use `set_volume`
+- state : use `set_state`
+- source : use `set_source`
+- 
 ## 📜 Changelog
+
+- **Version 0.4**
+  - Add `KefAsyncConnector`. A class with the same functionality as `KefConnector` but with async properties and methods.
 
 - **Version 0.3**
   - ⚠️ _Breaking change :_ `get_song_information()` now returns a dictionnary, no longer a tuple
