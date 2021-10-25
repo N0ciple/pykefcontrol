@@ -2,7 +2,7 @@
 Python library for controlling the KEF LS50 Wireless II
 
 ⚠️ **Read changelog to see breaking changes.**
-For the **async** version, please read 
+For the **async** version, please read [this section](#️-specificity-of-kefasyncconnector)
 
 - [🔉 pykefcontrol](#-pykefcontrol)
   - [📄 General Informations](#-general-informations)
