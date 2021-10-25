@@ -28,10 +28,10 @@ To install pykefcontrol, you can use pip :
 pip install pykefcontrol
 ```
 
-You can make sure you have the last version by typing :
+You can make sure you have the latest version by typing :
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the last version is version `0.4`
+Currently, the latest version is version `0.4`
 
 ## ⚙️ Usage
 
@@ -210,7 +210,7 @@ loop.run_until_complete(main())
 - volume : use `set_volume`
 - state : use `set_state`
 - source : use `set_source`
-
+ 
 ## 📜 Changelog
 
 - **Version 0.4**
