@@ -31,7 +31,7 @@ pip install pykefcontrol
 You can make sure you have the latest version by typing :
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the latest version is version `0.4`
+Currently, the latest version is version `0.5`
 
 ## ⚙️ Usage
 
@@ -212,6 +212,9 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **Version 0.5**
+  - Add option to pass existing `session=aiohttp.ClientSession()` to `KefAsyncConnector`.
+  - Add method `close_session` and `resurect_session`
 
 - **Version 0.4**
   - Add `KefAsyncConnector`. A class with the same functionality as `KefConnector` but with async properties and methods.

@@ -1,3 +1,3 @@
-from pykefcontrol.kef_connector import KefConnector
+from pykefcontrol.kef_connector import KefConnector, KefAsyncConnector
 
-__version__ = 0.4
+__version__ = 0.5
