@@ -304,7 +304,15 @@ class KefAsyncConnector():
         async with self._session.get( "http://" + self.host +"/api/setData", params=payload) as response :
             json_output = await response.json()
 
-    
+    async def set_status(self, status):
+        payload = {
+            "path": "settings:/kef/play/physicalSource",
+            "roles": "value",
+             "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{status}"}}""".format(status=status)
+        }
+
+        async with self._session.get( "http://" + self.host +"/api/setData", params=payload) as response :
+            json_output = await response.json()    
 
     async def get_song_information(self):
         """Get song title, album and artist"""
@@ -384,17 +392,6 @@ class KefAsyncConnector():
             json_output = await response.json()
 
         return json_output[0]['i64_']
-
-    async def set_status(self, status):
-        payload = {
-            "path": "settings:/kef/play/physicalSource",
-            "roles": "value",
-             "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{status}"}}""".format(status=status)
-        }
-
-        async with self._session.get( "http://" + self.host +"/api/setData", params=payload) as response :
-            json_output = await response.json()
-
         
     @property
     async def source(self):
