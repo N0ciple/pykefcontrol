@@ -224,10 +224,20 @@ class KefConnector():
         return info_dict
 
 class KefAsyncConnector():
-    def __init__(self, host):
+    def __init__(self, host, session=None):
         self.host = host
-        self._session = aiohttp.ClientSession()
+        self._session = session
         self.previous_volume = 15 # Hardcoded previous volume, in case unmute is used before mute
+
+    async def close_session(self):
+        """close session"""
+        if self._session is not None:
+            await self._session.close()
+            self._session = None
+
+    async def resurect_session(self):
+        if self._session is None:
+            self._session = aiohttp.ClientSession()
 
     async def power_on(self):
         """power on speaker """
@@ -265,7 +275,7 @@ class KefAsyncConnector():
             "roles": "activate",
              "value": """{{"control":"{command}"}}""".format(command=command)
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/setData", params=payload) as response :
             json_output = await response.json()
 
@@ -275,7 +285,7 @@ class KefAsyncConnector():
             "path": "player:player/data",
             "roles": "value",
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/getData", params=payload) as response :
             json_output = await response.json()
 
@@ -289,7 +299,7 @@ class KefAsyncConnector():
             "roles": "value",
              "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{source}"}}""".format(source=source)
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/setData", params=payload) as response :
             json_output = await response.json()
 
@@ -300,7 +310,7 @@ class KefAsyncConnector():
             "roles": "value",
              "value": """{{"type":"i32_","i32_":{volume}}}""".format(volume=volume)
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/setData", params=payload) as response :
             json_output = await response.json()
 
@@ -310,7 +320,7 @@ class KefAsyncConnector():
             "roles": "value",
              "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{status}"}}""".format(status=status)
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/setData", params=payload) as response :
             json_output = await response.json()    
 
@@ -333,7 +343,7 @@ class KefAsyncConnector():
             "path": "settings:/system/primaryMacAddress",
             "roles": "value"
         }
-        
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host + "/api/getData", params=payload) as response :
              json_output = await response.json()
 
@@ -346,7 +356,7 @@ class KefAsyncConnector():
             "path": "settings:/deviceName",
             "roles": "value"
         }
-        
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host + "/api/getData", params=payload) as response :
             json_output = await response.json()
         
@@ -359,7 +369,7 @@ class KefAsyncConnector():
             "path": "settings:/kef/host/speakerStatus",
             "roles": "value"
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/getData", params=payload) as response :
             json_output = await response.json()
 
@@ -387,7 +397,7 @@ class KefAsyncConnector():
             "path": "player:player/data/playTime",
             "roles": "value",
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/getData", params=payload) as response :
             json_output = await response.json()
 
@@ -401,7 +411,7 @@ class KefAsyncConnector():
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/getData", params=payload) as response :
             json_output = await response.json()
 
@@ -414,7 +424,7 @@ class KefAsyncConnector():
             "path": "player:volume",
             "roles": "value",
         }
-
+        await self.resurect_session()
         async with self._session.get( "http://" + self.host +"/api/getData", params=payload) as response :
             json_output = await response.json()
 
