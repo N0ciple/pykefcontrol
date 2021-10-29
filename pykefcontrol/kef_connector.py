@@ -70,6 +70,19 @@ class KefConnector():
 
         return json_output[0]
 
+    def get_song_information(self):
+        """
+        Get song title, album and artist
+        """
+        song_data = self._get_player_data()
+        info_dict = dict()
+        info_dict["title"] = song_data.get('trackRoles', {}).get('title')
+        info_dict["artist"] = song_data.get('trackRoles', {}).get('mediaData',{}).get('metaData',{}).get('artist')
+        info_dict["album"] = song_data.get('trackRoles',{}).get('mediaData',{}).get('metaData',{}).get('album')
+        info_dict["cover_url"] = song_data.get('trackRoles',{}).get('icon',None)
+
+        return info_dict
+
     @property
     def mac_address(self):
         """Get the mac address of the Speaker"""
@@ -210,18 +223,6 @@ class KefConnector():
 
         return json_output[0]['i64_']
 
-    def get_song_information(self):
-        """
-        Get song title, album and artist
-        """
-        song_data = self._get_player_data()
-        info_dict = dict()
-        info_dict["title"] = song_data.get('trackRoles', {}).get('title')
-        info_dict["artist"] = song_data.get('trackRoles', {}).get('mediaData',{}).get('metaData',{}).get('artist')
-        info_dict["album"] = song_data.get('trackRoles',{}).get('mediaData',{}).get('metaData',{}).get('album')
-        info_dict["cover_url"] = song_data.get('trackRoles',{}).get('icon',None)
-
-        return info_dict
 
 class KefAsyncConnector():
     def __init__(self, host, session=None):
