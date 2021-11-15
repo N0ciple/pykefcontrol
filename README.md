@@ -4,6 +4,9 @@ Python library for controlling the KEF LS50 Wireless II
 ⚠️ **Read changelog to see breaking changes.**
 For the **async** version, please read [this section](#️-specificity-of-kefasyncconnector)
 
+🏠️ **For the Home Assistant integration, please see [hass-kef-connector](https://github.com/N0ciple/hass-kef-connector)**
+
+
 - [🔉 pykefcontrol](#-pykefcontrol)
   - [📄 General Informations](#-general-informations)
   - [⬇️ Installation](#️-installation)
