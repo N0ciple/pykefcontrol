@@ -60,6 +60,9 @@ class KefConnector:
             json_output = response.json()
 
     def set_volume(self, volume):
+        """
+        Set volume
+        """
         self.volume = volume
 
     def _get_player_data(self):
@@ -78,11 +81,12 @@ class KefConnector:
 
         return json_output[0]
 
-    def get_song_information(self):
+    def get_song_information(self, song_data=None):
         """
         Get song title, album and artist
         """
-        song_data = self._get_player_data()
+        if song_data == None:
+            song_data = self._get_player_data()
         info_dict = dict()
         info_dict["title"] = song_data.get("trackRoles", {}).get("title")
         info_dict["artist"] = (
@@ -102,13 +106,15 @@ class KefConnector:
         return info_dict
 
     def _get_polling_queue(self):
-        """Get the polling queue uuid"""
+        """
+        Get the polling queue uuid, and subscribe to all relevant topics
+        """
         payload = {
             "subscribe": [
                 {"path": "player:player/data/playTime", "type": "itemWithValue"},
                 {"path": "settings:/mediaPlayer/playMode", "type": "itemWithValue"},
-                # {"path":"playlists:pq/getitems","type":"rows"},
-                # {"path":"notifications:/display/queue","type":"rows"},
+                {"path": "playlists:pq/getitems", "type": "rows"},
+                {"path": "notifications:/display/queue", "type": "rows"},
                 {"path": "settings:/kef/host/maximumVolume", "type": "itemWithValue"},
                 {"path": "player:volume", "type": "itemWithValue"},
                 {"path": "kef:fwupgrade/info", "type": "itemWithValue"},
@@ -140,6 +146,34 @@ class KefConnector:
         self.last_polled = time.time()
 
         return self.polling_queue
+
+    def parse_events(self, events):
+        """Parse events"""
+        parsed_events = dict()
+
+        for event in events:
+            if event == "settings:/kef/play/physicalSource":
+                parsed_events["source"] = events[event]["kefPhysicalSource"]
+            elif event == "player:player/data/playTime":
+                parsed_events["song_status"] = events[event]["i64_"]
+            elif event == "player:volume":
+                parsed_events["volume"] = events[event]["i32_"]
+            elif event == "player:player/data":
+                parsed_events["song_info"] = self.get_song_information(events[event])
+                parsed_events["song_length"] = events[event]["status"]["duration"]
+                parsed_events["status"] = events[event]["state"]
+            elif event == "settings:/kef/host/speakerStatus":
+                parsed_events["speaker_status"] = events[event]["kefSpeakerStatus"]
+            elif event == "settings:/deviceName":
+                parsed_events["device_name"] = events[event]["string_"]
+            elif event == "settings:/mediaPlayer/mute":
+                parsed_events["mute"] = events[event]["bool_"]
+            else:
+                if parsed_events.get("other") == None:
+                    parsed_events["other"] = {}
+                parsed_events["other"].update({event: events[event]})
+
+        return parsed_events
 
     def poll_speaker(self):
         """poll speaker for info"""
@@ -173,7 +207,7 @@ class KefConnector:
         for k in events:
             events[k] = events[k][-1].get("itemValue", "updated")
 
-        return events
+        return self.parse_events(events)
 
     @property
     def mac_address(self):
@@ -468,13 +502,13 @@ class KefAsyncConnector:
         return info_dict
 
     async def get_polling_queue(self):
-        """Get the polling queue uuid"""
+        """Get the polling queue uuid, and subscribe to all relevant topics"""
         payload = {
             "subscribe": [
                 {"path": "player:player/data/playTime", "type": "itemWithValue"},
                 {"path": "settings:/mediaPlayer/playMode", "type": "itemWithValue"},
-                # {"path":"playlists:pq/getitems","type":"rows"},
-                # {"path":"notifications:/display/queue","type":"rows"},
+                {"path": "playlists:pq/getitems", "type": "rows"},
+                {"path": "notifications:/display/queue", "type": "rows"},
                 {"path": "settings:/kef/host/maximumVolume", "type": "itemWithValue"},
                 {"path": "player:volume", "type": "itemWithValue"},
                 {"path": "kef:fwupgrade/info", "type": "itemWithValue"},
@@ -508,6 +542,34 @@ class KefAsyncConnector:
 
         return self.polling_queue
 
+    def parse_events(self, events):
+        """Parse events"""
+        parsed_events = dict()
+
+        for event in events:
+            if event == "settings:/kef/play/physicalSource":
+                parsed_events["source"] = events[event]["kefPhysicalSource"]
+            elif event == "player:player/data/playTime":
+                parsed_events["song_status"] = events[event]["i64_"]
+            elif event == "player:volume":
+                parsed_events["volume"] = events[event]["i32_"]
+            elif event == "player:player/data":
+                parsed_events["song_info"] = self.get_song_information(events[event])
+                parsed_events["song_length"] = events[event]["status"]["duration"]
+                parsed_events["status"] = events[event]["state"]
+            elif event == "settings:/kef/host/speakerStatus":
+                parsed_events["speaker_status"] = events[event]["kefSpeakerStatus"]
+            elif event == "settings:/deviceName":
+                parsed_events["device_name"] = events[event]["string_"]
+            elif event == "settings:/mediaPlayer/mute":
+                parsed_events["mute"] = events[event]["bool_"]
+            else:
+                if parsed_events.get("other") == None:
+                    parsed_events["other"] = {}
+                parsed_events["other"].update({event: events[event]})
+
+        return parsed_events
+
     def poll_speaker(self):
         """poll speaker for info"""
 
@@ -535,7 +597,7 @@ class KefAsyncConnector:
         for k in events:
             events[k] = events[k][-1].get("itemValue", "updated")
 
-        return events
+        return self.parse_events(events)
 
     @property
     async def mac_address(self):
