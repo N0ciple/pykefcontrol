@@ -1,4 +1,3 @@
-import json
 import requests
 import aiohttp
 import time
@@ -102,7 +101,7 @@ class KefConnector:
 
         return info_dict
 
-    def get_polling_queue(self):
+    def _get_polling_queue(self):
         """Get the polling queue uuid"""
         payload = {
             "subscribe": [
@@ -149,16 +148,16 @@ class KefConnector:
         # recreate a new queue if polling_queue is None
         # or if last poll was more than 50 seconds ago
         if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
-            print(self.polling_queue)
-            self.get_polling_queue()
+            self._get_polling_queue()
 
-        print(self.polling_queue)
-        payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": 5}
+        payload = {
+            "queueId": "{{{}}}".format(self.polling_queue),
+            "timeout": 9,
+        }
 
-        with requests.post(
-            "http://" + self.host + "/api/event/pollQueue", params=payload, timeout=5
+        with requests.get(
+            "http://" + self.host + "/api/event/pollQueue", params=payload, timeout=10
         ) as response:
-            print(response.text)
             json_output = response.json()
 
         # Process all events
@@ -516,10 +515,10 @@ class KefAsyncConnector:
         if (self.polling_queue == None) or ((time.time() - self.set_volume) > 50):
             self.get_polling_queue()
 
-        payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": 5}
+        payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": 9}
 
-        with requests.post(
-            "http://" + self.host + "/api/event/pollQueue", params=payload, timeout=5
+        with requests.get(
+            "http://" + self.host + "/api/event/pollQueue", params=payload, timeout=10
         ) as response:
             json_output = response.json()
 
