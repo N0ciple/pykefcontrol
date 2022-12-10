@@ -591,7 +591,7 @@ class KefAsyncConnector:
             params=payload,
             timeout=10 + 0.5,  # add 0.5 seconds to timeout to allow for processing
         ) as response:
-            json_output = response.json()
+            json_output = await response.json()
 
         # Process all events
 
