@@ -533,7 +533,7 @@ class KefAsyncConnector:
         }
 
         await self.resurect_session()
-        async with self._session.get(
+        async with self._session.post(
             "http://" + self.host + "/api/event/modifyQueue", json=payload
         ) as response:
             json_output = await response.json()
