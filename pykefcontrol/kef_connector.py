@@ -484,9 +484,10 @@ class KefAsyncConnector:
         ) as response:
             json_output = await response.json()
 
-    async def get_song_information(self):
+    async def get_song_information(self, song_data=None):
         """Get song title, album and artist"""
-        song_data = await self._get_player_data()
+        if song_data == None:
+            song_data = await self._get_player_data()
         info_dict = dict()
         info_dict["title"] = song_data.get("trackRoles", {}).get("title")
         info_dict["artist"] = (
