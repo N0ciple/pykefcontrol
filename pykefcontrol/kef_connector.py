@@ -558,7 +558,9 @@ class KefAsyncConnector:
             elif event == "player:volume":
                 parsed_events["volume"] = events[event]["i32_"]
             elif event == "player:player/data":
-                parsed_events["song_info"] = self.get_song_information(events[event])
+                parsed_events["song_info"] = await self.get_song_information(
+                    events[event]
+                )
                 parsed_events["song_length"] = events[event]["status"]["duration"]
                 parsed_events["status"] = events[event]["state"]
             elif event == "settings:/kef/host/speakerStatus":
