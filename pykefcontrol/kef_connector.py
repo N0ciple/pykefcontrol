@@ -175,7 +175,7 @@ class KefConnector:
 
         return parsed_events
 
-    def poll_speaker(self):
+    def poll_speaker(self, timeout=10):
         """poll speaker for info"""
 
         # check if it is necessary to get a new queue
@@ -186,11 +186,13 @@ class KefConnector:
 
         payload = {
             "queueId": "{{{}}}".format(self.polling_queue),
-            "timeout": 9,
+            "timeout": timeout,
         }
 
         with requests.get(
-            "http://" + self.host + "/api/event/pollQueue", params=payload, timeout=10
+            "http://" + self.host + "/api/event/pollQueue",
+            params=payload,
+            timeout=timeout + 0.5,  # add 0.5 seconds to timeout to allow for processing
         ) as response:
             json_output = response.json()
 
@@ -570,17 +572,19 @@ class KefAsyncConnector:
 
         return parsed_events
 
-    def poll_speaker(self):
+    def poll_speaker(self, timeout=10):
         """poll speaker for info"""
 
         # check if it is necessary to get a new queue
         if (self.polling_queue == None) or ((time.time() - self.set_volume) > 50):
             self.get_polling_queue()
 
-        payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": 9}
+        payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": timeout}
 
         with requests.get(
-            "http://" + self.host + "/api/event/pollQueue", params=payload, timeout=10
+            "http://" + self.host + "/api/event/pollQueue",
+            params=payload,
+            timeout=10 + 0.5,  # add 0.5 seconds to timeout to allow for processing
         ) as response:
             json_output = response.json()
 
