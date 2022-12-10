@@ -606,7 +606,7 @@ class KefAsyncConnector:
         for k in events:
             events[k] = events[k][-1].get("itemValue", "updated")
 
-        return self.parse_events(events)
+        return await self.parse_events(events)
 
     @property
     async def mac_address(self):
