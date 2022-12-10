@@ -585,7 +585,8 @@ class KefAsyncConnector:
 
         payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": timeout}
 
-        with requests.get(
+        await self.resurect_session()
+        async with self._session.get(
             "http://" + self.host + "/api/event/pollQueue",
             params=payload,
             timeout=10 + 0.5,  # add 0.5 seconds to timeout to allow for processing
