@@ -372,6 +372,8 @@ class KefAsyncConnector:
         self.previous_volume = (
             15  # Hardcoded previous volume, in case unmute is used before mute
         )
+        self.last_polled = None
+        self.polling_queue = None
 
     async def close_session(self):
         """close session"""
