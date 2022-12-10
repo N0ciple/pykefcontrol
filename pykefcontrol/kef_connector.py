@@ -576,7 +576,7 @@ class KefAsyncConnector:
 
         return parsed_events
 
-    def poll_speaker(self, timeout=10):
+    async def poll_speaker(self, timeout=10):
         """poll speaker for info"""
 
         # check if it is necessary to get a new queue
