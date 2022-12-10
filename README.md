@@ -177,7 +177,7 @@ from pykefcontrol.kef_connector import KefAsyncConnector
 
 # Define an async function
 async def main():
-  my_speaker = KefAsyncConnector("192.168.124.46")
+  my_speaker = KefAsyncConnector("192.168.yyy.zz")
   # Get speaker name
   print(await my_speaker.speaker_name)
   # Get volume
