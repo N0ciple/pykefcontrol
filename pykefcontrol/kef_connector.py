@@ -546,7 +546,7 @@ class KefAsyncConnector:
 
         return self.polling_queue
 
-    def parse_events(self, events):
+    async def parse_events(self, events):
         """Parse events"""
         parsed_events = dict()
 
