@@ -580,8 +580,8 @@ class KefAsyncConnector:
         """poll speaker for info"""
 
         # check if it is necessary to get a new queue
-        if (self.polling_queue == None) or ((time.time() - self.set_volume) > 50):
-            self.get_polling_queue()
+        if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
+            await self.get_polling_queue()
 
         payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": timeout}
 
