@@ -432,7 +432,11 @@ def song_info():
     rule_msg("Song Info")
     console.print("The script will now test the song info fetching.")
     console.print("[bold red]Make sure the speaker is playing a song.[/bold red]")
-    input("Press [ENTER] to when a song is playing...")
+    console.print(
+        "[bold red]the song should be playing via Chormecast, Airplay, Spotify Connect or DLNA.[/bold red]"
+    )
+
+    input("Press [ENTER] to continue, when a song is playing...")
     with console.status("Checking if a song is playing"):
         try:
             while not spkr.is_playing:
@@ -466,7 +470,7 @@ def track_control():
     console.print(
         "The script will test [dot blue]next track, previous track[/dot blue] and [dot blue]pause/play[/dot blue]."
     )
-    input("Press [ENTER] to when a song is playing...")
+    input("Press [ENTER] to continue, when a song is playing...")
     with console.status("Checking if a song is playing"):
         try:
             while not spkr.is_playing:
@@ -501,7 +505,7 @@ def track_control():
     newline()
     console.print("Testing pause...")
     console.print("[bold red]Make sure the speaker is playing a song.[/bold red]")
-    input("Press [ENTER] to when a song is playing...")
+    input("Press [ENTER] to continue, when a song is playing...")
 
     try:
         spkr.toggle_play_pause()
@@ -517,7 +521,7 @@ def track_control():
     newline()
     console.print("Testing play...")
     console.print("[bold red]Make sure the speaker is paused.[/bold red]")
-    input("Press [ENTER] to when the speaker is paused...")
+    input("Press [ENTER] to continue, when the speaker is paused...")
     try:
         spkr.toggle_play_pause()
     except Exception as e:
@@ -592,6 +596,9 @@ if __name__ == "__main__":
     )
     console.print(
         "and [bold red]report it to GitHub[/bold red]. Even if all the tests passed ! 👌"
+    )
+    console.print(
+        "[bold red] Report here: https://github.com/N0ciple/pykefcontrol/issues/2[/bold red]"
     )
     console.print(
         "[bold green]Thanks for helping improving Pykefcontrol ! 🤗[/bold green]"
