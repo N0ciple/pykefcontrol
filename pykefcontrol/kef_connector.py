@@ -157,21 +157,23 @@ class KefConnector:
 
         for event in events:
             if event == "settings:/kef/play/physicalSource":
-                parsed_events["source"] = events[event]["kefPhysicalSource"]
+                parsed_events["source"] = events[event].get("kefPhysicalSource")
             elif event == "player:player/data/playTime":
-                parsed_events["song_status"] = events[event]["i64_"]
+                parsed_events["song_status"] = events[event].get("i64_")
             elif event == "player:volume":
-                parsed_events["volume"] = events[event]["i32_"]
+                parsed_events["volume"] = events[event].get("i32_")
             elif event == "player:player/data":
                 parsed_events["song_info"] = self.get_song_information(events[event])
-                parsed_events["song_length"] = events[event]["status"]["duration"]
-                parsed_events["status"] = events[event]["state"]
+                parsed_events["song_length"] = (
+                    events[event].get("status", {}).get("duration")
+                )
+                parsed_events["status"] = events[event].get("state")
             elif event == "settings:/kef/host/speakerStatus":
-                parsed_events["speaker_status"] = events[event]["kefSpeakerStatus"]
+                parsed_events["speaker_status"] = events[event].get("kefSpeakerStatus")
             elif event == "settings:/deviceName":
-                parsed_events["device_name"] = events[event]["string_"]
+                parsed_events["device_name"] = events[event].get("string_")
             elif event == "settings:/mediaPlayer/mute":
-                parsed_events["mute"] = events[event]["bool_"]
+                parsed_events["mute"] = events[event].get("bool_")
             else:
                 if parsed_events.get("other") == None:
                     parsed_events["other"] = {}
@@ -561,23 +563,25 @@ class KefAsyncConnector:
 
         for event in events:
             if event == "settings:/kef/play/physicalSource":
-                parsed_events["source"] = events[event]["kefPhysicalSource"]
+                parsed_events["source"] = events[event].get("kefPhysicalSource")
             elif event == "player:player/data/playTime":
-                parsed_events["song_status"] = events[event]["i64_"]
+                parsed_events["song_status"] = events[event].get("i64_")
             elif event == "player:volume":
-                parsed_events["volume"] = events[event]["i32_"]
+                parsed_events["volume"] = events[event].get("i32_")
             elif event == "player:player/data":
                 parsed_events["song_info"] = await self.get_song_information(
                     events[event]
                 )
-                parsed_events["song_length"] = events[event]["status"]["duration"]
-                parsed_events["status"] = events[event]["state"]
+                parsed_events["song_length"] = (
+                    events[event].get("status", {}).get("duration")
+                )
+                parsed_events["status"] = events[event].get("state")
             elif event == "settings:/kef/host/speakerStatus":
-                parsed_events["speaker_status"] = events[event]["kefSpeakerStatus"]
+                parsed_events["speaker_status"] = events[event].get("kefSpeakerStatus")
             elif event == "settings:/deviceName":
-                parsed_events["device_name"] = events[event]["string_"]
+                parsed_events["device_name"] = events[event].get("string_")
             elif event == "settings:/mediaPlayer/mute":
-                parsed_events["mute"] = events[event]["bool_"]
+                parsed_events["mute"] = events[event].get("bool_")
             else:
                 if parsed_events.get("other") == None:
                     parsed_events["other"] = {}
