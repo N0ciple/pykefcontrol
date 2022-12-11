@@ -332,7 +332,7 @@ def sumup():
 
     rule_msg("Sum Up")
     console.print("[bold]Speaker version:[/bold]")
-    console.printf("\t[dodger_blue1]{MODEL_LIST[MODEL_SELECTED]}[/dodger_blue1]")
+    console.print(f"\t[dodger_blue1]{MODEL_LIST[MODEL_SELECTED]}[/dodger_blue1]")
     console.print("[bold]Working features:[/bold]")
     for feature in USER_CONFIRMATION:
         if USER_CONFIRMATION[feature]:
