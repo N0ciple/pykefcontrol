@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name="pykefcontrol",
     packages=["pykefcontrol"],
-    version="0.6",
+    version="0.6.1",
     license="MIT",
     description="Python library for controling the KEF LS50 Wireless II",
     long_description="Python library for controling the KEF LS50 Wireless II. It supports basic commands for setting the volume, the source, and getting the media playing informations",
