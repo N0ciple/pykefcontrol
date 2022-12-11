@@ -3,8 +3,6 @@ import aiohttp
 import time
 
 
-
-class KefConnector:
 class KefConnector:
     def __init__(self, host):
         self.host = host
@@ -107,13 +105,12 @@ class KefConnector:
 
         return info_dict
 
-    def _get_polling_queue(self):
+    def _get_polling_queue(self, song_status=True):
         """
         Get the polling queue uuid, and subscribe to all relevant topics
         """
         payload = {
             "subscribe": [
-                {"path": "player:player/data/playTime", "type": "itemWithValue"},
                 {"path": "settings:/mediaPlayer/playMode", "type": "itemWithValue"},
                 {"path": "playlists:pq/getitems", "type": "rows"},
                 {"path": "notifications:/display/queue", "type": "rows"},
@@ -135,6 +132,11 @@ class KefConnector:
             ],
             "unsubscribe": [],
         }
+
+        if song_status:
+            payload["subscribe"].append(
+                {"path": "player:player/data/playTime", "type": "itemWithValue"}
+            )
 
         with requests.post(
             "http://" + self.host + "/api/event/modifyQueue", json=payload
@@ -177,14 +179,14 @@ class KefConnector:
 
         return parsed_events
 
-    def poll_speaker(self, timeout=10):
+    def poll_speaker(self, timeout=10, song_status=False):
         """poll speaker for info"""
 
         # check if it is necessary to get a new queue
         # recreate a new queue if polling_queue is None
         # or if last poll was more than 50 seconds ago
         if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
-            self._get_polling_queue()
+            self._get_polling_queue(song_status=song_status)
 
         payload = {
             "queueId": "{{{}}}".format(self.polling_queue),
@@ -508,11 +510,10 @@ class KefAsyncConnector:
 
         return info_dict
 
-    async def get_polling_queue(self):
+    async def get_polling_queue(self, song_status=None):
         """Get the polling queue uuid, and subscribe to all relevant topics"""
         payload = {
             "subscribe": [
-                {"path": "player:player/data/playTime", "type": "itemWithValue"},
                 {"path": "settings:/mediaPlayer/playMode", "type": "itemWithValue"},
                 {"path": "playlists:pq/getitems", "type": "rows"},
                 {"path": "notifications:/display/queue", "type": "rows"},
@@ -534,6 +535,11 @@ class KefAsyncConnector:
             ],
             "unsubscribe": [],
         }
+
+        if song_status:
+            payload["subscribe"].append(
+                {"path": "player:player/data/playTime", "type": "itemWithValue"}
+            )
 
         await self.resurect_session()
         async with self._session.post(
@@ -579,12 +585,12 @@ class KefAsyncConnector:
 
         return parsed_events
 
-    async def poll_speaker(self, timeout=10):
+    async def poll_speaker(self, timeout=10, song_status=False):
         """poll speaker for info"""
 
         # check if it is necessary to get a new queue
         if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
-            await self.get_polling_queue()
+            await self.get_polling_queue(song_status=song_status)
 
         payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": timeout}
 
