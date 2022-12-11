@@ -1,11 +1,16 @@
 import requests
 import aiohttp
+import time
 
 
+
+class KefConnector:
 class KefConnector:
     def __init__(self, host):
         self.host = host
         self.previous_volume = self.volume
+        self.last_polled = None
+        self.polling_queue = None
 
     def power_on(self):
         self.status = "powerOn"
@@ -57,6 +62,9 @@ class KefConnector:
             json_output = response.json()
 
     def set_volume(self, volume):
+        """
+        Set volume
+        """
         self.volume = volume
 
     def _get_player_data(self):
@@ -75,11 +83,12 @@ class KefConnector:
 
         return json_output[0]
 
-    def get_song_information(self):
+    def get_song_information(self, song_data=None):
         """
         Get song title, album and artist
         """
-        song_data = self._get_player_data()
+        if song_data == None:
+            song_data = self._get_player_data()
         info_dict = dict()
         info_dict["title"] = song_data.get("trackRoles", {}).get("title")
         info_dict["artist"] = (
@@ -97,6 +106,112 @@ class KefConnector:
         info_dict["cover_url"] = song_data.get("trackRoles", {}).get("icon", None)
 
         return info_dict
+
+    def _get_polling_queue(self):
+        """
+        Get the polling queue uuid, and subscribe to all relevant topics
+        """
+        payload = {
+            "subscribe": [
+                {"path": "player:player/data/playTime", "type": "itemWithValue"},
+                {"path": "settings:/mediaPlayer/playMode", "type": "itemWithValue"},
+                {"path": "playlists:pq/getitems", "type": "rows"},
+                {"path": "notifications:/display/queue", "type": "rows"},
+                {"path": "settings:/kef/host/maximumVolume", "type": "itemWithValue"},
+                {"path": "player:volume", "type": "itemWithValue"},
+                {"path": "kef:fwupgrade/info", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/volumeStep", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/volumeLimit", "type": "itemWithValue"},
+                {"path": "settings:/mediaPlayer/mute", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/speakerStatus", "type": "itemWithValue"},
+                {"path": "settings:/kef/play/physicalSource", "type": "itemWithValue"},
+                {"path": "player:player/data", "type": "itemWithValue"},
+                {"path": "kef:speedTest/status", "type": "itemWithValue"},
+                {"path": "network:info", "type": "itemWithValue"},
+                {"path": "kef:eqProfile", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/modelName", "type": "itemWithValue"},
+                {"path": "settings:/version", "type": "itemWithValue"},
+                {"path": "settings:/deviceName", "type": "itemWithValue"},
+            ],
+            "unsubscribe": [],
+        }
+
+        with requests.post(
+            "http://" + self.host + "/api/event/modifyQueue", json=payload
+        ) as response:
+            json_output = response.json()
+
+        # Update polling_queue property with queue uuid
+        self.polling_queue = json_output[1:-1]
+
+        # Update last polled time
+        self.last_polled = time.time()
+
+        return self.polling_queue
+
+    def parse_events(self, events):
+        """Parse events"""
+        parsed_events = dict()
+
+        for event in events:
+            if event == "settings:/kef/play/physicalSource":
+                parsed_events["source"] = events[event]["kefPhysicalSource"]
+            elif event == "player:player/data/playTime":
+                parsed_events["song_status"] = events[event]["i64_"]
+            elif event == "player:volume":
+                parsed_events["volume"] = events[event]["i32_"]
+            elif event == "player:player/data":
+                parsed_events["song_info"] = self.get_song_information(events[event])
+                parsed_events["song_length"] = events[event]["status"]["duration"]
+                parsed_events["status"] = events[event]["state"]
+            elif event == "settings:/kef/host/speakerStatus":
+                parsed_events["speaker_status"] = events[event]["kefSpeakerStatus"]
+            elif event == "settings:/deviceName":
+                parsed_events["device_name"] = events[event]["string_"]
+            elif event == "settings:/mediaPlayer/mute":
+                parsed_events["mute"] = events[event]["bool_"]
+            else:
+                if parsed_events.get("other") == None:
+                    parsed_events["other"] = {}
+                parsed_events["other"].update({event: events[event]})
+
+        return parsed_events
+
+    def poll_speaker(self, timeout=10):
+        """poll speaker for info"""
+
+        # check if it is necessary to get a new queue
+        # recreate a new queue if polling_queue is None
+        # or if last poll was more than 50 seconds ago
+        if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
+            self._get_polling_queue()
+
+        payload = {
+            "queueId": "{{{}}}".format(self.polling_queue),
+            "timeout": timeout,
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/event/pollQueue",
+            params=payload,
+            timeout=timeout + 0.5,  # add 0.5 seconds to timeout to allow for processing
+        ) as response:
+            json_output = response.json()
+
+        # Process all events
+
+        events = dict()
+        # fill events lists
+        for j in json_output:
+            if events.get(j["path"], False):
+                events[j["path"]].append(j)
+            else:
+                events[j["path"]] = [j]
+        # prune events lists
+        for k in events:
+            events[k] = events[k][-1].get("itemValue", "updated")
+
+        return self.parse_events(events)
 
     @property
     def mac_address(self):
@@ -259,6 +374,8 @@ class KefAsyncConnector:
         self.previous_volume = (
             15  # Hardcoded previous volume, in case unmute is used before mute
         )
+        self.last_polled = None
+        self.polling_queue = None
 
     async def close_session(self):
         """close session"""
@@ -369,9 +486,10 @@ class KefAsyncConnector:
         ) as response:
             json_output = await response.json()
 
-    async def get_song_information(self):
+    async def get_song_information(self, song_data=None):
         """Get song title, album and artist"""
-        song_data = await self._get_player_data()
+        if song_data == None:
+            song_data = await self._get_player_data()
         info_dict = dict()
         info_dict["title"] = song_data.get("trackRoles", {}).get("title")
         info_dict["artist"] = (
@@ -389,6 +507,109 @@ class KefAsyncConnector:
         info_dict["cover_url"] = song_data.get("trackRoles", {}).get("icon", None)
 
         return info_dict
+
+    async def get_polling_queue(self):
+        """Get the polling queue uuid, and subscribe to all relevant topics"""
+        payload = {
+            "subscribe": [
+                {"path": "player:player/data/playTime", "type": "itemWithValue"},
+                {"path": "settings:/mediaPlayer/playMode", "type": "itemWithValue"},
+                {"path": "playlists:pq/getitems", "type": "rows"},
+                {"path": "notifications:/display/queue", "type": "rows"},
+                {"path": "settings:/kef/host/maximumVolume", "type": "itemWithValue"},
+                {"path": "player:volume", "type": "itemWithValue"},
+                {"path": "kef:fwupgrade/info", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/volumeStep", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/volumeLimit", "type": "itemWithValue"},
+                {"path": "settings:/mediaPlayer/mute", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/speakerStatus", "type": "itemWithValue"},
+                {"path": "settings:/kef/play/physicalSource", "type": "itemWithValue"},
+                {"path": "player:player/data", "type": "itemWithValue"},
+                {"path": "kef:speedTest/status", "type": "itemWithValue"},
+                {"path": "network:info", "type": "itemWithValue"},
+                {"path": "kef:eqProfile", "type": "itemWithValue"},
+                {"path": "settings:/kef/host/modelName", "type": "itemWithValue"},
+                {"path": "settings:/version", "type": "itemWithValue"},
+                {"path": "settings:/deviceName", "type": "itemWithValue"},
+            ],
+            "unsubscribe": [],
+        }
+
+        await self.resurect_session()
+        async with self._session.post(
+            "http://" + self.host + "/api/event/modifyQueue", json=payload
+        ) as response:
+            json_output = await response.json()
+
+        # Update polling_queue property with queue uuid
+        self.polling_queue = json_output[1:-1]
+
+        # Update last polled time
+        self.last_polled = time.time()
+
+        return self.polling_queue
+
+    async def parse_events(self, events):
+        """Parse events"""
+        parsed_events = dict()
+
+        for event in events:
+            if event == "settings:/kef/play/physicalSource":
+                parsed_events["source"] = events[event]["kefPhysicalSource"]
+            elif event == "player:player/data/playTime":
+                parsed_events["song_status"] = events[event]["i64_"]
+            elif event == "player:volume":
+                parsed_events["volume"] = events[event]["i32_"]
+            elif event == "player:player/data":
+                parsed_events["song_info"] = await self.get_song_information(
+                    events[event]
+                )
+                parsed_events["song_length"] = events[event]["status"]["duration"]
+                parsed_events["status"] = events[event]["state"]
+            elif event == "settings:/kef/host/speakerStatus":
+                parsed_events["speaker_status"] = events[event]["kefSpeakerStatus"]
+            elif event == "settings:/deviceName":
+                parsed_events["device_name"] = events[event]["string_"]
+            elif event == "settings:/mediaPlayer/mute":
+                parsed_events["mute"] = events[event]["bool_"]
+            else:
+                if parsed_events.get("other") == None:
+                    parsed_events["other"] = {}
+                parsed_events["other"].update({event: events[event]})
+
+        return parsed_events
+
+    async def poll_speaker(self, timeout=10):
+        """poll speaker for info"""
+
+        # check if it is necessary to get a new queue
+        if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
+            await self.get_polling_queue()
+
+        payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": timeout}
+
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/event/pollQueue",
+            params=payload,
+            timeout=10 + 0.5,  # add 0.5 seconds to timeout to allow for processing
+        ) as response:
+            json_output = await response.json()
+
+        # Process all events
+
+        events = dict()
+        # fill events lists
+        for j in json_output:
+            if events.get(j["path"], False):
+                events[j["path"]].append(j)
+            else:
+                events[j["path"]] = [j]
+        # prune events lists
+        for k in events:
+            events[k] = events[k][-1].get("itemValue", "updated")
+
+        return await self.parse_events(events)
 
     @property
     async def mac_address(self):
