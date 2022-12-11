@@ -9,6 +9,7 @@ class KefConnector:
         self.previous_volume = self.volume
         self.last_polled = None
         self.polling_queue = None
+        self._previous_poll_song_status = False
 
     def power_on(self):
         self.status = "powerOn"
@@ -187,7 +188,12 @@ class KefConnector:
         # check if it is necessary to get a new queue
         # recreate a new queue if polling_queue is None
         # or if last poll was more than 50 seconds ago
-        if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
+        if (
+            (self.polling_queue == None)
+            or ((time.time() - self.last_polled) > 50)
+            or (song_status != self._previous_poll_song_status)
+        ):
+            self._previous_poll_song_status = song_status
             self._get_polling_queue(song_status=song_status)
 
         payload = {
@@ -380,6 +386,7 @@ class KefAsyncConnector:
         )
         self.last_polled = None
         self.polling_queue = None
+        self._previous_poll_song_status = False
 
     async def close_session(self):
         """close session"""
@@ -593,7 +600,11 @@ class KefAsyncConnector:
         """poll speaker for info"""
 
         # check if it is necessary to get a new queue
-        if (self.polling_queue == None) or ((time.time() - self.last_polled) > 50):
+        if (
+            (self.polling_queue == None)
+            or ((time.time() - self.last_polled) > 50)
+            or (song_status != self._previous_polling_song_status)
+        ):
             await self.get_polling_queue(song_status=song_status)
 
         payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": timeout}
