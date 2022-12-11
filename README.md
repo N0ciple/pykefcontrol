@@ -44,7 +44,7 @@ To use the pykefcontrol library, you need to know the IP address of your speaker
  2. Tap the gear icon on the bottom right
  3. Then your speaker name (It should be right below your profile information)
  4. Finally, the little circled "i" next to your speaker name in the _My Speakers_ section
- 5. You should find your IP address in the "IP address" section under the form `www.xxx.yyy.zzz`, where `www`,`xxx`,`yyy` and `zzz` are integers between `0` and `255`.
+ 5. You should find your IP address in the "IP address" section under the form `www.xxx.yyy.zzz`, where `www`, `xxx`, `yyy` and `zzz` are integers between `0` and `255`.
 
 ### 🎚️ Control the speaker with pykefcontrol
 Once pykefcontrol is installed and you have your KEF Speaker IP address, you can use pykefcontrol in the following way :
@@ -156,7 +156,13 @@ my_speaker.song_status # it is not a method so it does not require parenthesis
 
 Pykefcontrol offers a polling functionality. Instead of manually fetching all parameters to see what has changed, you can use the method `poll_speaker`. This method returns the updated properties since the last time the changes were polled. If multiple changes are made to the same property, only the last change will be kept. It is technically possible to track all the changes to a property since the last poll, although it is not implemented. Please submit an issue if you need such a feature.
 `poll_speaker` will return a dictionary whose keys are the names of the properties which have been updated.
-The method `poll_speaker` takes an optional `timeout` kwarg (in seconds - default value of `10`). If no change has been made since the last poll when you call `poll_speaker`, the method will wait for changes during `timeout` seconds. If there is a change before the end of the timeout, `poll_speaker` will return them immediately. If no changes are made, the method will return an empty dictionary.
+
+`poll_speaker` arguments:
+
+| argument      | required   | default value | comment |
+| ------------- | ---------- | ------------- | ------- |
+| `timeout`     | *Optional* | `10`          |  `timeout` is in seconds. If no change has been made since the last poll when you call `poll_speaker`, the method will wait for changes during `timeout` seconds for new changes. If there is a change before the end of the timeout, `poll_speaker` will return them immediately and stop monitoring changes. If no changes are made, the method will return an empty dictionary.  ⚠️ the real timeout is `timeout`+ 0.5 seconds. The speaker will wait for `timeout` seconds before returning an empty dictionary if no changes are made. Therefore it is necessary to add a small margin in the python function to account for processing/networking time. Please submit an issue if you feel that this parameter needs tweaking. |
+| `song_status` | *Optional* | `False`       |  if `song_status` if set to `True`, it will poll the song status (how many miliseconds of the current song have been played so far). If a song is playing and `song_status` is set to `True`, `poll_speaker` will return almost imediately since `song_status` is updated at each second. This is forcing you to poll agressively to get other events. By default it is set to `False` in order to track other events more efficiently. |
 
 ```python
 my_speaker.poll_speaker(timeout=3) # example of a 3 seconds timeout
@@ -181,6 +187,10 @@ my_speaker.poll_speaker()
 #
 # -> in this case it returns both "song_status" (because the song kept playing), 
 # and "volume" because you updated the volume
+
+# if you do not want to poll the song status
+my_speaker.poll_speaker(song_satus=False)
+# (output example) >>> {'volume': 32}
 ```
 All the possible keys of the dictionary are:
  `source`, `song_status`, `volume`, `song_info`, `song_length`, `status`, `speaker_status`, `device_name`, `mute` and `other`.
@@ -248,6 +258,9 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **Version 0.6.1**
+  - Add parameter `song_status` to the method `poll_speaker`. 
+- 
 - **Version 0.6**
   - Add method `poll_speaker` that returns the last changes made to properties since the last poll.
   
