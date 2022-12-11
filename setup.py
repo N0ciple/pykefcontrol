@@ -10,7 +10,7 @@ setup(
     author="Robin Dupont",
     author_email="robin.dpnt@gmail.com",
     url="https://github.com/rodupont/pykefcontrol",
-    keywords=["Kef", "Speaker", "Wireless II", "Wireless 2"],
+    keywords=["Kef", "KEF", "Speaker", "LS50", "LS50W2", "Wireless II", "Wireless 2"],
     install_requires=["requests>=2.26.0", "aiohttp>=3.7.4"],
     classifiers=[
         "Development Status :: 4 - Beta",  # Chose either "3 - Alpha", "4 - Beta" or "5 - Production/Stable" as the current state of your package
