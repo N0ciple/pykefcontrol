@@ -248,6 +248,9 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **Version 0.6**
+  - Add method `poll_speaker` that returns the last changes made to properties since last poll.
+  
 - **Version 0.5**
   - Add option to pass existing `session=aiohttp.ClientSession()` to `KefAsyncConnector`.
   - Add method `close_session` and `resurect_session`
