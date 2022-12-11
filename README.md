@@ -260,7 +260,7 @@ loop.run_until_complete(main())
 ## 📜 Changelog
 - **Version 0.6.1**
   - Add parameter `song_status` to the method `poll_speaker`. 
-- 
+
 - **Version 0.6**
   - Add method `poll_speaker` that returns the last changes made to properties since the last poll.
   
