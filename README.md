@@ -1,8 +1,5 @@
-# 🔉 pykefcontrol 
-Python library for controlling the KEF LS50 Wireless II
-
 # ⚠️ Beta tester wanted!
-Pykefcontrol should be compatible with LSX 2 and LS60, but beta testers are needed to ensure it is the case!
+Pykefcontrol should be compatible with **LSX 2** and **LS60**, but beta testers are needed to ensure it is the case!
 If you want to help test the library for such models, please clone the repository, install the testing requirements, execute the testing script and report the output to [this issue](https://github.com/N0ciple/pykefcontrol/issues/2)
 
 ```
@@ -11,15 +8,18 @@ cd pykefcontrol
 pip install -r testing_reqs.txt
 python testing.py
 ```
+Thank you for your help ! 👌
+
+# 🔉 pykefcontrol 
+Python library for controlling the KEF LS50 Wireless II
 
 ⚠️ **Read the changelog to see breaking changes.**
 For the **async** version, please read [this section](#️-specificity-of-kefasyncconnector)
 
 🏠️ **For the Home Assistant integration, please see [hass-kef-connector](https://github.com/N0ciple/hass-kef-connector)**
 
-
-- [🔉 pykefcontrol](#-pykefcontrol)
 - [⚠️ Beta tester wanted!](#️-beta-tester-wanted)
+- [🔉 pykefcontrol](#-pykefcontrol)
   - [📄 General Informations](#-general-informations)
   - [⬇️ Installation](#️-installation)
   - [⚙️ Usage](#️-usage)
