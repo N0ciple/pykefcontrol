@@ -269,6 +269,9 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **Version 0.6.2**
+  - modify `poll_speaker` to prevent falling if `song_status` is not properly defined by the speaker
+  - regenerate the queue_id if `song_status` was changed before the queue timeout.
 - **Version 0.6.1**
   - Add parameter `song_status` to the method `poll_speaker`. 
 
