@@ -1,5 +1,5 @@
-# ⚠️ Beta tester wanted!
-Pykefcontrol should be compatible with **LSX 2** and **LS60**, but beta testers are needed to ensure it is the case!
+### ⚠️ Help test Pykefcontrol on the **LSX 2** and **LS60**
+Pykefcontrol should be compatible with **LSX 2** and **LS60**, but tests are needed to ensure it is the case since I do not have these models at home!
 If you want to help test the library for such models, please clone the repository, install the testing requirements, execute the testing script and report the output to [this issue](https://github.com/N0ciple/pykefcontrol/issues/2)
 
 ```
@@ -18,7 +18,6 @@ For the **async** version, please read [this section](#️-specificity-of-kefasy
 
 🏠️ **For the Home Assistant integration, please see [hass-kef-connector](https://github.com/N0ciple/hass-kef-connector)**
 
-- [⚠️ Beta tester wanted!](#️-beta-tester-wanted)
 - [🔉 pykefcontrol](#-pykefcontrol)
   - [📄 General Informations](#-general-informations)
   - [⬇️ Installation](#️-installation)
