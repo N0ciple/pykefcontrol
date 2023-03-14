@@ -1,5 +1,8 @@
-# script_version=2
+# script_version=3
+# Leaving the top comment for backward compatibility
+CURRENT_SCRIPT_VERSION=3
 # %%
+
 try:
     import pykefcontrol as pkf
     import sys
@@ -94,7 +97,7 @@ def check_script_version():
             ) as response:
                 output = response.text
         version = output.split("# script_version=")[1].split("\n")[0]
-        if version == "1":
+        if version == CURRENT_SCRIPT_VERSION:
             console.print(
                 f"[bold green]This script is up to date.[/bold green]",
             )
@@ -441,7 +444,7 @@ def song_info():
     console.print("The script will now test the song info fetching.")
     console.print("[bold red]Make sure the speaker is playing a song.[/bold red]")
     console.print(
-        "[bold red]the song should be playing via Chormecast, Airplay, Spotify Connect or DLNA.[/bold red]"
+        "[bold red]the song should be playing via Chromecast, Airplay, Spotify Connect or DLNA.[/bold red]"
     )
 
     input("Press [ENTER] to continue, when a song is playing...")
