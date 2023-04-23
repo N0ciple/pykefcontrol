@@ -266,7 +266,7 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
-- **version 0.7.0**
+- **version 0.7**
   - Now **compatible with LSX II and LS60** !
   - Add `speaker_model` and `firmware_version` properties.
 - **Version 0.6.2**
