@@ -269,6 +269,7 @@ loop.run_until_complete(main())
 - **version 0.7**
   - Now **compatible with LSX II and LS60** !
   - Add `speaker_model` and `firmware_version` properties.
+  - ⚠️ `song_status` argument of `poll_speaker` is now deprecated. Please use `poll_song_status`
 - **Version 0.6.2**
   - modify `poll_speaker` to prevent falling if `song_status` is not properly defined by the speaker
   - regenerate the queue_id if `song_status` was changed before the queue timeout.
