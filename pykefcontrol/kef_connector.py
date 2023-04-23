@@ -376,6 +376,39 @@ class KefConnector:
 
         return json_output[0]["i64_"]
 
+    def _get_speaker_firmware_version(self):
+        """
+        Get speaker firmware "release text"
+        """
+
+        payload = {
+            "path": "settings:/releasetext",
+            "roles": "value",
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+
+        return json_output[0]["string_"]
+
+    @property
+    def speaker_model(self):
+        """
+        Speaker model
+        """
+        speaker_model = self._get_speaker_firmware_version().split("_")[0]
+        return speaker_model
+
+    @property
+    def firmware_version(self):
+        """
+        Speaker firmware version
+        """
+        speaker_firmware_version = self._get_speaker_firmware_version().split("_")[1]
+        return speaker_firmware_version
+
 
 class KefAsyncConnector:
     def __init__(self, host, session=None):
@@ -728,3 +761,36 @@ class KefAsyncConnector:
             json_output = await response.json()
 
         return json_output[0]["i32_"]
+
+    async def _get_speaker_firmware_version(self):
+        """
+        Get speaker firmware "release text"
+        """
+
+        payload = {
+            "path": "settings:/releasetext",
+            "roles": "value",
+        }
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = await response.json()
+
+        return json_output[0]["string_"]
+
+    async def get_speaker_model(self):
+        """
+        Speaker model
+        """
+        speaker_model = await self._get_speaker_firmware_version().split("_")[0]
+        return speaker_model
+
+    async def get_firmware_version(self):
+        """
+        Speaker firmware version
+        """
+        speaker_firmware_version = await self._get_speaker_firmware_version().split(
+            "_"
+        )[1]
+        return speaker_firmware_version
