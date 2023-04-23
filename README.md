@@ -1,17 +1,5 @@
-### ⚠️ Help test Pykefcontrol on the **LSX 2** and **LS60**
-Pykefcontrol should be compatible with **LSX 2** and **LS60**, but tests are needed to ensure it is the case since I do not have these models at home!
-If you want to help test the library for such models, please clone the repository, install the testing requirements, execute the testing script and report the output to [this issue](https://github.com/N0ciple/pykefcontrol/issues/2)
-
-```
-git clone https://github.com/N0ciple/pykefcontrol.git
-cd pykefcontrol
-pip install -r testing_reqs.txt
-python testing.py
-```
-Thank you for your help ! 👌
-
 # 🔉 pykefcontrol 
-Python library for controlling the KEF LS50 Wireless II
+Python library for controlling KEF speakers : LS50WII, LSX II and LS60
 
 ⚠️ **Read the changelog to see breaking changes.**
 For the **async** version, please read [this section](#️-specificity-of-kefasyncconnector)
@@ -33,7 +21,7 @@ For the **async** version, please read [this section](#️-specificity-of-kefasy
   
 
 ## 📄 General Informations 
-This library works with the KEF LS50 Wireless II only. If you are searching for a library for the first generation LS50W, you can use [aiokef](https://github.com/basnijholt/aiokef).
+This library works with the KEF LS50 Wireless II, LSX II and LS60 only. If you are searching for a library for the first generation LS50W or LSX, you can use [aiokef](https://github.com/basnijholt/aiokef).
 Pykefcontrol has 2 main components: `KefConnector` and `KefAsyncConnector`. The first one can be used in all classic scripts and python programs, whereas the second one (`KefAsyncConnector`) can be used in asynchronous programs.
 
 ## ⬇️ Installation 
@@ -45,7 +33,7 @@ pip install pykefcontrol
 You can make sure you have the latest version by typing:
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the latest version is version `0.6.2`
+Currently, the latest version is version `0.7.0`
 
 ## ⚙️ Usage
 
@@ -98,6 +86,14 @@ my_speaker.mac_address
 # Get the speaker friendly name if configured
 my_speaker.speaker_name
 # (output example) >>> 'My Kef LS50W2'
+
+# Get the speaker model
+my_speaker.speaker_model
+# (output example) >>> 'LS50WII'
+
+# Get the firmware version
+my_speaker.firmware_version
+# (output example) >>> 'V27100'
 ```
 
 **Source Control**
@@ -173,14 +169,15 @@ Pykefcontrol offers a polling functionality. Instead of manually fetching all pa
 | argument      | required   | default value | comment |
 | ------------- | ---------- | ------------- | ------- |
 | `timeout`     | *Optional* | `10`          |  `timeout` is in seconds. If no change has been made since the last poll when you call `poll_speaker`, the method will wait for changes during `timeout` seconds for new changes. If there is a change before the end of the timeout, `poll_speaker` will return them immediately and stop monitoring changes. If no changes are made, the method will return an empty dictionary.  ⚠️ the real timeout is `timeout`+ 0.5 seconds. The speaker will wait for `timeout` seconds before returning an empty dictionary if no changes are made. Therefore it is necessary to add a small margin in the python function to account for processing/networking time. Please submit an issue if you feel that this parameter needs tweaking. |
-| `song_status` | *Optional* | `False`       |  if `song_status` if set to `True`, it will poll the song status (how many miliseconds of the current song have been played so far). If a song is playing and `song_status` is set to `True`, `poll_speaker` will return almost imediately since `song_status` is updated at each second. This is forcing you to poll agressively to get other events. By default it is set to `False` in order to track other events more efficiently. |
+| `song_status` | *Optional* | `False`    | **Deprecated**, please use `poll_song_status` instead |
+| `poll_song_status` | *Optional* | `False` |if `poll_song_status` if set to `True`, it will poll the song status (how many miliseconds of the current song have been played so far). If a song is playing and `poll_song_status` is set to `True`, `poll_speaker` will return almost imediately since `song_status` is updated at each second. This is forcing you to poll agressively to get other events. By default it is set to `False` in order to track other events more efficiently. |
 
 ```python
 my_speaker.poll_speaker(timeout=3) # example of a 3 seconds timeout
 # (output example) >>> {}  # it will return an empty dict if no changes were made
 
 # no suppose you start playing a song
-my_speaker.poll_speaker() # timeout is 10 seconds by default
+my_speaker.poll_speaker(poll_song_satus=True) # timeout is 10 seconds by default
 # (output example) >>> {'song_info': {'title': 'Am I Wrong',
 #  'artist': 'Etienne de Crécy',
 #  'album': 'Am I Wrong',
@@ -193,14 +190,14 @@ my_speaker.poll_speaker() # timeout is 10 seconds by default
 # "song_length", "status" and "song_status" containing information about the new song
 
 # now suppose you change the volume to 32
-my_speaker.poll_speaker()
+my_speaker.poll_speaker(poll_song_satus=True)
 # (output example) >>> {'song_status': 175085, 'volume': 32}
 #
 # -> in this case it returns both "song_status" (because the song kept playing), 
 # and "volume" because you updated the volume
 
 # if you do not want to poll the song status
-my_speaker.poll_speaker(song_satus=False)
+my_speaker.poll_speaker()
 # (output example) >>> {'volume': 32}
 ```
 All the possible keys of the dictionary are:
@@ -269,6 +266,9 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **version 0.7.0**
+  - Now **compatible with LSX II and LS60** !
+  - Add `speaker_model` and `firmware_version` properties.
 - **Version 0.6.2**
   - modify `poll_speaker` to prevent falling if `song_status` is not properly defined by the speaker
   - regenerate the queue_id if `song_status` was changed before the queue timeout.
