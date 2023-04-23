@@ -1,6 +1,7 @@
 import requests
 import aiohttp
 import time
+import warnings
 
 
 class KefConnector:
@@ -106,7 +107,7 @@ class KefConnector:
 
         return info_dict
 
-    def _get_polling_queue(self, song_status=True):
+    def _get_polling_queue(self, song_status=False, poll_song_status=False):
         """
         Get the polling queue uuid, and subscribe to all relevant topics
         """
@@ -182,8 +183,16 @@ class KefConnector:
 
         return parsed_events
 
-    def poll_speaker(self, timeout=10, song_status=False):
+    def poll_speaker(self, timeout=10, song_status=False, poll_song_status=False):
         """poll speaker for info"""
+
+        if song_status:
+            warnings.warn(
+                "The 'song_status' parameter is deprecated and will be removed in version 0.8.0. "
+                "Please use 'poll_song_status' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         # check if it is necessary to get a new queue
         # recreate a new queue if polling_queue is None
@@ -194,7 +203,7 @@ class KefConnector:
             or (song_status != self._previous_poll_song_status)
         ):
             self._previous_poll_song_status = song_status
-            self._get_polling_queue(song_status=song_status)
+            self._get_polling_queue(poll_song_status=poll_song_status)
 
         payload = {
             "queueId": "{{{}}}".format(self.polling_queue),
@@ -552,7 +561,7 @@ class KefAsyncConnector:
 
         return info_dict
 
-    async def get_polling_queue(self, song_status=None):
+    async def get_polling_queue(self, song_status=False, poll_song_status=False):
         """Get the polling queue uuid, and subscribe to all relevant topics"""
         payload = {
             "subscribe": [
@@ -629,8 +638,16 @@ class KefAsyncConnector:
 
         return parsed_events
 
-    async def poll_speaker(self, timeout=10, song_status=False):
+    async def poll_speaker(self, timeout=10, song_status=False, poll_song_status=False):
         """poll speaker for info"""
+
+        if song_status:
+            warnings.warn(
+                "The 'song_status' parameter is deprecated and will be removed in version 0.8.0. "
+                "Please use 'poll_song_status' instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
 
         # check if it is necessary to get a new queue
         if (
@@ -638,7 +655,7 @@ class KefAsyncConnector:
             or ((time.time() - self.last_polled) > 50)
             or (song_status != self._previous_polling_song_status)
         ):
-            await self.get_polling_queue(song_status=song_status)
+            await self.get_polling_queue(poll_song_status=poll_song_status)
 
         payload = {"queueId": "{{{}}}".format(self.polling_queue), "timeout": timeout}
 
