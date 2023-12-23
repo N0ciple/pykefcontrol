@@ -233,7 +233,7 @@ async def main():
   print(await my_speaker.volume)
 
   # Turn on speaker
-  await my_speaker.tunr_on()
+  await my_speaker.power_on()
   # Toggle play/pause
   await my_speaker.toggle_play_pause()
 
