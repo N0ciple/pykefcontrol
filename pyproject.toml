@@ -1,0 +1,34 @@
+[tool.poetry]
+name = "pykefcontrol"
+version = "0.7"
+description = "Python library for controling KEF speakers (LS50W2, LSX2, LS60). It supports basic commands for setting the volume, the source, and getting the media playing informations."
+authors = ["Robin Dupont <robin.dpnt@gmail.com>"]
+homepage = "https://github.com/rodupont/pykefcontrol"
+repository = "https://github.com/rodupont/pykefcontrol" 
+keywords = ["Kef", "KEF", "Speaker", "LS50", "LS50W2", "Wireless II", "Wireless 2", "LSX", "LSX2", "LS60", "LS60W"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Home Automation",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11"
+]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+aiohttp = ">=3.7.4"
+requests = ">=2.26.0"
+
+[tool.poetry.group.dev.dependencies]
+jupyterlab = "^4.1.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
