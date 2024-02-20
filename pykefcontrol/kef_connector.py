@@ -800,14 +800,14 @@ class KefAsyncConnector:
         """
         Speaker model
         """
-        speaker_model = await self._get_speaker_firmware_version().split("_")[0]
+        raw_data = await self._get_speaker_firmware_version()
+        speaker_model = raw_data.split("_")[0]
         return speaker_model
 
     async def get_firmware_version(self):
         """
         Speaker firmware version
         """
-        speaker_firmware_version = await self._get_speaker_firmware_version().split(
-            "_"
-        )[1]
+        raw_data = await self._get_speaker_firmware_version()
+        speaker_firmware_version = raw_data.split("_")[1]
         return speaker_firmware_version
