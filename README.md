@@ -33,7 +33,7 @@ pip install pykefcontrol
 You can make sure you have the latest version by typing:
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the latest version is version `0.7.0`
+Currently, the latest version is version `0.7.1`
 
 ## ⚙️ Usage
 
@@ -266,6 +266,8 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **version 0.7.1**
+  - Fix issue with async version of `get_speaker_model` and `get_firmware_version`.
 - **version 0.7**
   - Now **compatible with LSX II and LS60** !
   - Add `speaker_model` and `firmware_version` properties.
