@@ -91,21 +91,59 @@ class KefConnector:
             song_data = self._get_player_data()
         info_dict = dict()
         info_dict["title"] = song_data.get("trackRoles", {}).get("title")
-        info_dict["artist"] = (
+
+        metadata = (
             song_data.get("trackRoles", {})
             .get("mediaData", {})
             .get("metaData", {})
-            .get("artist")
         )
-        info_dict["album"] = (
-            song_data.get("trackRoles", {})
-            .get("mediaData", {})
-            .get("metaData", {})
-            .get("album")
-        )
+
+        info_dict["artist"] = metadata.get("artist")
+        info_dict["album"] = metadata.get("album")
+        # Use albumArtist if available, otherwise fallback to artist
+        album_artist = metadata.get("albumArtist")
+        info_dict["album_artist"] = album_artist if album_artist else metadata.get("artist")
         info_dict["cover_url"] = song_data.get("trackRoles", {}).get("icon", None)
+        info_dict["service_id"] = metadata.get("serviceID")
 
         return info_dict
+
+    def get_audio_codec_information(self, player_data=None):
+        """
+        Get audio codec information from player data.
+        Returns dict with codec, sample rate, and channel information.
+        """
+        try:
+            if player_data is None:
+                player_data = self._get_player_data()
+
+            codec_dict = {}
+            active_resource = (
+                player_data.get("trackRoles", {})
+                .get("mediaData", {})
+                .get("activeResource", {})
+            )
+
+            if active_resource:
+                codec_dict["codec"] = active_resource.get("codec")
+                codec_dict["sampleFrequency"] = active_resource.get("sampleFrequency")
+                codec_dict["streamSampleRate"] = active_resource.get("streamSampleRate")
+                codec_dict["streamChannels"] = active_resource.get("streamChannels")
+                codec_dict["nrAudioChannels"] = active_resource.get("nrAudioChannels")
+
+            # Get streaming service ID from metadata
+            metadata = (
+                player_data.get("trackRoles", {})
+                .get("mediaData", {})
+                .get("metaData", {})
+            )
+            if metadata:
+                codec_dict["serviceID"] = metadata.get("serviceID")
+
+            return codec_dict
+        except Exception:
+            # Silently return empty dict if codec info not available
+            return {}
 
     def _get_polling_queue(self, song_status=False, poll_song_status=False):
         """
@@ -496,6 +534,56 @@ class KefAsyncConnector:
 
         return json_output[0]
 
+    async def get_request(self, path, roles="value"):
+        """Generic method to get data from any API path.
+
+        Args:
+            path: API path to query (e.g., "kef:eqProfile", "network:info")
+            roles: API roles parameter (default: "value")
+
+        Returns:
+            JSON response from API
+        """
+        payload = {
+            "path": path,
+            "roles": roles,
+        }
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = await response.json()
+
+        return json_output
+
+    async def get_wifi_information(self):
+        """Get WiFi information from speaker.
+
+        Returns dict with WiFi signal strength, SSID, frequency, and BSSID.
+        Returns empty dict if WiFi info is not available.
+        """
+        try:
+            # Get network info from speaker
+            network_data = await self.get_request("network:info", roles="value")
+
+            wifi_dict = {}
+            network_info = (
+                network_data[0].get("networkInfo", {}) if network_data else {}
+            )
+
+            if network_info:
+                wireless = network_info.get("wireless", {})
+                if wireless:
+                    wifi_dict["signalLevel"] = wireless.get("signalLevel")
+                    wifi_dict["ssid"] = wireless.get("ssid")
+                    wifi_dict["frequency"] = wireless.get("frequency")
+                    wifi_dict["bssid"] = wireless.get("bssid")
+
+            return wifi_dict
+        except Exception:
+            # Silently return empty dict if WiFi info not available
+            return {}
+
     async def set_source(self, source):
         """Set spaker source, if speaker in standby, it powers on the speaker.
         Possible sources : wifi, bluetooth, tv, optic, coaxial or analog"""
@@ -545,21 +633,59 @@ class KefAsyncConnector:
             song_data = await self._get_player_data()
         info_dict = dict()
         info_dict["title"] = song_data.get("trackRoles", {}).get("title")
-        info_dict["artist"] = (
+
+        metadata = (
             song_data.get("trackRoles", {})
             .get("mediaData", {})
             .get("metaData", {})
-            .get("artist")
         )
-        info_dict["album"] = (
-            song_data.get("trackRoles", {})
-            .get("mediaData", {})
-            .get("metaData", {})
-            .get("album")
-        )
+
+        info_dict["artist"] = metadata.get("artist")
+        info_dict["album"] = metadata.get("album")
+        # Use albumArtist if available, otherwise fallback to artist
+        album_artist = metadata.get("albumArtist")
+        info_dict["album_artist"] = album_artist if album_artist else metadata.get("artist")
         info_dict["cover_url"] = song_data.get("trackRoles", {}).get("icon", None)
+        info_dict["service_id"] = metadata.get("serviceID")
 
         return info_dict
+
+    async def get_audio_codec_information(self, player_data=None):
+        """
+        Get audio codec information from player data.
+        Returns dict with codec, sample rate, and channel information.
+        """
+        try:
+            if player_data is None:
+                player_data = await self._get_player_data()
+
+            codec_dict = {}
+            active_resource = (
+                player_data.get("trackRoles", {})
+                .get("mediaData", {})
+                .get("activeResource", {})
+            )
+
+            if active_resource:
+                codec_dict["codec"] = active_resource.get("codec")
+                codec_dict["sampleFrequency"] = active_resource.get("sampleFrequency")
+                codec_dict["streamSampleRate"] = active_resource.get("streamSampleRate")
+                codec_dict["streamChannels"] = active_resource.get("streamChannels")
+                codec_dict["nrAudioChannels"] = active_resource.get("nrAudioChannels")
+
+            # Get streaming service ID from metadata
+            metadata = (
+                player_data.get("trackRoles", {})
+                .get("mediaData", {})
+                .get("metaData", {})
+            )
+            if metadata:
+                codec_dict["serviceID"] = metadata.get("serviceID")
+
+            return codec_dict
+        except Exception:
+            # Silently return empty dict if codec info not available
+            return {}
 
     async def get_polling_queue(self, song_status=False, poll_song_status=False):
         """Get the polling queue uuid, and subscribe to all relevant topics"""
