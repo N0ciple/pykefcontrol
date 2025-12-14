@@ -145,6 +145,55 @@ class KefConnector:
             # Silently return empty dict if codec info not available
             return {}
 
+    def get_request(self, path, roles="value"):
+        """Generic method to get data from any API path.
+
+        Args:
+            path: API path to query (e.g., "kef:eqProfile", "network:info")
+            roles: API roles parameter (default: "value")
+
+        Returns:
+            JSON response from API
+        """
+        payload = {
+            "path": path,
+            "roles": roles,
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+
+        return json_output
+
+    def get_wifi_information(self):
+        """Get WiFi information from speaker.
+
+        Returns dict with WiFi signal strength, SSID, frequency, and BSSID.
+        Returns empty dict if WiFi info is not available.
+        """
+        try:
+            # Get network info from speaker
+            network_data = self.get_request("network:info", roles="value")
+
+            wifi_dict = {}
+            network_info = (
+                network_data[0].get("networkInfo", {}) if network_data else {}
+            )
+
+            if network_info:
+                wireless = network_info.get("wireless", {})
+                if wireless:
+                    wifi_dict["signalLevel"] = wireless.get("signalLevel")
+                    wifi_dict["ssid"] = wireless.get("ssid")
+                    wifi_dict["frequency"] = wireless.get("frequency")
+                    wifi_dict["bssid"] = wireless.get("bssid")
+
+            return wifi_dict
+        except Exception:
+            # Silently return empty dict if WiFi info not available
+            return {}
+
     def _get_polling_queue(self, song_status=False, poll_song_status=False):
         """
         Get the polling queue uuid, and subscribe to all relevant topics
