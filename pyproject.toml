@@ -1,11 +1,24 @@
-[tool.poetry]
+[project]
 name = "pykefcontrol"
 version = "0.8"
 description = "Python library for controling KEF speakers (LS50W2, LSX2, LS60). It supports basic commands for setting the volume, the source, and getting the media playing informations."
-authors = ["Robin Dupont <robin.dpnt@gmail.com>"]
-homepage = "https://github.com/rodupont/pykefcontrol"
-repository = "https://github.com/rodupont/pykefcontrol" 
-keywords = ["Kef", "KEF", "Speaker", "LS50", "LS50W2", "Wireless II", "Wireless 2", "LSX", "LSX2", "LS60", "LS60W"]
+authors = [{ name = "Robin Dupont", email = "robin.dpnt@gmail.com" }]
+requires-python = ">=3.10,<4"
+readme = "README.md"
+license = "MIT"
+keywords = [
+    "Kef",
+    "KEF",
+    "Speaker",
+    "LS50",
+    "LS50W2",
+    "Wireless II",
+    "Wireless 2",
+    "LSX",
+    "LSX2",
+    "LS60",
+    "LS60W",
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -16,19 +29,23 @@ classifiers = [
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11"
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
-license = "MIT"
-readme = "README.md"
+dependencies = [
+    "aiohttp>=3.7.4",
+    "requests>=2.26.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10"
-aiohttp = ">=3.7.4"
-requests = ">=2.26.0"
+[project.urls]
+Homepage = "https://github.com/rodupont/pykefcontrol"
+Repository = "https://github.com/rodupont/pykefcontrol"
 
-[tool.poetry.group.dev.dependencies]
-jupyterlab = "^4.1.0"
+[dependency-groups]
+dev = ["jupyterlab>=4.1.0,<5"]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
