@@ -12,6 +12,9 @@ try:
     import ipaddress
     import time
     import requests
+    import argparse
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    import threading
 except Exception as e:
     print("Error:", e, style="red")
     print("Please install the required packages with `pip install -r testing_reqs.txt`")
@@ -23,6 +26,9 @@ AUTO_TESTS_OUTPUT = {}
 USER_CONFIRMATION = {}
 DEBUG = False
 MODEL_SELECTED = -1
+NON_INTERACTIVE = False  # Flag for non-interactive mode
+HOST = None  # Speaker IP address
+spkr = None  # Speaker connection object
 MODEL_LIST = ["LSX 2", "LS50 Wireless 2", "LS60"]
 MODEL_SOURCES = {
     # LSX 2
@@ -89,6 +95,88 @@ def validate_ip_address(ip_string):
         return -1
 
 
+def check_kef_speaker(ip, timeout=1.5):
+    """Check if a KEF speaker is available at the given IP address.
+
+    Returns tuple: (is_speaker, speaker_info_dict or None)
+    """
+    try:
+        # KEF speakers use HTTP API on port 80
+        # Try to connect and get speaker info
+        speaker = pkf.KefConnector(ip)
+
+        # Try to get basic info with short timeout
+        # If this succeeds, it's a KEF speaker
+        info = {
+            'ip': ip,
+            'name': speaker.speaker_name,
+            'model': speaker.speaker_model,
+            'mac': speaker.mac_address,
+            'firmware': speaker.firmware_version
+        }
+        return (True, info)
+    except Exception:
+        # Not a KEF speaker or not reachable
+        return (False, None)
+
+
+def discover_kef_speakers(network_range=None, max_workers=50):
+    """Discover KEF speakers on the network.
+
+    Args:
+        network_range: IP range to scan (e.g., "192.168.16.0/24").
+                      If None, auto-detects from local IP.
+        max_workers: Number of parallel threads for scanning.
+
+    Returns:
+        List of dictionaries with speaker information.
+    """
+    if network_range is None:
+        # Auto-detect network from local IP
+        local_ip = get_ip()
+        if local_ip == "no IP found":
+            console.print("[bold red]Could not detect local IP address[/bold red]")
+            return []
+
+        # Assume /24 network (common for home networks)
+        network_range = ".".join(local_ip.split(".")[:-1]) + ".0/24"
+
+    console.print(f"[cyan3]Scanning network {network_range} for KEF speakers...[/cyan3]")
+
+    discovered_speakers = []
+    network = ipaddress.ip_network(network_range, strict=False)
+
+    # Get list of hosts to scan (excludes network and broadcast addresses)
+    hosts_to_scan = list(network.hosts())
+    total_ips = len(hosts_to_scan)
+    scanned = 0
+    found = 0
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all IP checks
+        future_to_ip = {
+            executor.submit(check_kef_speaker, str(ip)): str(ip)
+            for ip in hosts_to_scan
+        }
+
+        # Process results as they complete
+        with console.status(f"[cyan3]Scanning... 0/{total_ips} IPs checked, 0 speakers found[/cyan3]"):
+            for future in as_completed(future_to_ip):
+                scanned += 1
+                is_speaker, info = future.result()
+                if is_speaker and info:
+                    found += 1
+                    discovered_speakers.append(info)
+                    console.print(f"[bold green]✓ Found KEF speaker:[/bold green] {info['name']} ({info['model']}) at {info['ip']}")
+
+                # Update status every 10 IPs
+                if scanned % 10 == 0:
+                    console.print(f"[cyan3]Progress: {scanned}/{total_ips} IPs checked, {found} speakers found[/cyan3]", end="\r")
+
+    console.print(f"\n[bold]Scan complete:[/bold] Found {len(discovered_speakers)} KEF speaker(s)")
+    return discovered_speakers
+
+
 def check_script_version():
     try:
         with console.status("Checking if this script is up to date..."):
@@ -115,11 +203,13 @@ def check_script_version():
             "Continuing anyway... but script version might not be the latest!"
         )
 
-    input("Press enter to continue...")
+    if not NON_INTERACTIVE:
+        input("Press enter to continue...")
 
 
 def prompt_continue():
-    input("Press enter to continue...")
+    if not NON_INTERACTIVE:
+        input("Press enter to continue...")
 
 
 def rule_msg(msg, sep="-"):
@@ -151,25 +241,31 @@ def user_confirmation(console, action, msg=None):
 
 
 def speaker_info():
+    global spkr
 
-    rule_msg("Speaker IP Address")
-    console.print("The script will gather a few informations about your speaker.")
-    console.print(
-        "[orange1]The script needs the [bold]IP address[/bold] of your speaker.[/orange1]"
-    )
-    prompt_continue()
-    print(
-        "Please enter the IP address of your KEF speaker in the form www.xxx.yyy.zzz\n(192.168.0.12 for example)"
-    )
+    if NON_INTERACTIVE:
+        # In non-interactive mode, spkr is already created
+        rule_msg("Speaker Information")
+        spkr_ip = HOST
+    else:
+        rule_msg("Speaker IP Address")
+        console.print("The script will gather a few informations about your speaker.")
+        console.print(
+            "[orange1]The script needs the [bold]IP address[/bold] of your speaker.[/orange1]"
+        )
+        prompt_continue()
+        print(
+            "Please enter the IP address of your KEF speaker in the form www.xxx.yyy.zzz\n(192.168.0.12 for example)"
+        )
 
-    spkr_ip = validate_ip_address(input("IP Address: "))
-    while spkr_ip == -1:
         spkr_ip = validate_ip_address(input("IP Address: "))
+        while spkr_ip == -1:
+            spkr_ip = validate_ip_address(input("IP Address: "))
 
-    print("Using speaker IP:", spkr_ip)
-    newline()
-    rule_msg("Speaker Information")
-    spkr = pkf.KefConnector(spkr_ip)
+        print("Using speaker IP:", spkr_ip)
+        newline()
+        rule_msg("Speaker Information")
+        spkr = pkf.KefConnector(spkr_ip)
     with console.status(
         "Getting speaker info...",
     ):
@@ -206,9 +302,10 @@ def speaker_info():
     print("\tMAC Address:", spkr_mac_address)
     print(f"\tModel: [dodger_blue1]{MODEL_LIST[MODEL_SELECTED]}[/dodger_blue1]")
     newline()
-    USER_CONFIRMATION.update(
-        user_confirmation(console, "speaker_info", msg="Are the information correct?")
-    )
+    if not NON_INTERACTIVE:
+        USER_CONFIRMATION.update(
+            user_confirmation(console, "speaker_info", msg="Are the information correct?")
+        )
     return spkr
 
 
@@ -554,8 +651,580 @@ def track_control():
         console.print("[bold green]All track control tests passed ! 🎉[/bold green]")
 
 
+def dsp_eq_test():
+    """Test ALL DSP/EQ features including filters and profile management"""
+    rule_msg("DSP/EQ & Filters Control")
+    console.print("The script will now test DSP/EQ control features.")
+    console.print("[orange1]These features control the speaker's sound processing[/orange1]")
+    prompt_continue()
+
+    # Get initial profile
+    console.print("\n[dodger_blue1]Testing get_eq_profile()...[/dodger_blue1]")
+    try:
+        initial_profile = spkr.get_eq_profile()
+        console.print("[green]✓[/green] Successfully retrieved EQ profile")
+        USER_CONFIRMATION["eq_get_profile"] = True
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["eq_get_profile"] = False
+
+    # Test desk mode
+    console.print("\n[dodger_blue1]Testing Desk Mode (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_desk_mode(True, -3)
+        time.sleep(0.5)
+        desk_enabled, desk_db = spkr.get_desk_mode()
+        if desk_enabled and desk_db == -3:
+            console.print(f"[green]✓[/green] Desk mode: enabled at {desk_db} dB")
+            USER_CONFIRMATION["dsp_desk_mode"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected enabled/-3, got {desk_enabled}/{desk_db}")
+            USER_CONFIRMATION["dsp_desk_mode"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["dsp_desk_mode"] = False
+
+    # Test wall mode
+    console.print("\n[dodger_blue1]Testing Wall Mode (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_wall_mode(True, -4.5)
+        time.sleep(0.5)
+        wall_enabled, wall_db = spkr.get_wall_mode()
+        if wall_enabled and wall_db == -4.5:
+            console.print(f"[green]✓[/green] Wall mode: enabled at {wall_db} dB")
+            USER_CONFIRMATION["dsp_wall_mode"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected enabled/-4.5, got {wall_enabled}/{wall_db}")
+            USER_CONFIRMATION["dsp_wall_mode"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["dsp_wall_mode"] = False
+
+    # Test bass extension
+    console.print("\n[dodger_blue1]Testing Bass Extension (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_bass_extension("extra")
+        time.sleep(0.5)
+        bass = spkr.get_bass_extension()
+        if bass == "extra":
+            console.print(f"[green]✓[/green] Bass extension: {bass}")
+            USER_CONFIRMATION["dsp_bass_extension"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 'extra', got '{bass}'")
+            USER_CONFIRMATION["dsp_bass_extension"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["dsp_bass_extension"] = False
+
+    # Test treble
+    console.print("\n[dodger_blue1]Testing Treble Control (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_treble_amount(3)
+        time.sleep(0.5)
+        treble = spkr.get_treble_amount()
+        if treble == 3:
+            console.print(f"[green]✓[/green] Treble: {treble} dB")
+            USER_CONFIRMATION["dsp_treble"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 3, got {treble}")
+            USER_CONFIRMATION["dsp_treble"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["dsp_treble"] = False
+
+    # Test balance
+    console.print("\n[dodger_blue1]Testing Balance Control (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_balance(5)
+        time.sleep(0.5)
+        balance = spkr.get_balance()
+        if balance == 5:
+            console.print(f"[green]✓[/green] Balance: {balance}")
+            USER_CONFIRMATION["dsp_balance"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 5, got {balance}")
+            USER_CONFIRMATION["dsp_balance"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["dsp_balance"] = False
+
+    # Test phase correction
+    console.print("\n[dodger_blue1]Testing Phase Correction (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_phase_correction(True)
+        time.sleep(0.5)
+        phase = spkr.get_phase_correction()
+        if phase:
+            console.print(f"[green]✓[/green] Phase correction: enabled")
+            USER_CONFIRMATION["dsp_phase_correction"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected True, got {phase}")
+            USER_CONFIRMATION["dsp_phase_correction"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["dsp_phase_correction"] = False
+
+    # Test profile name
+    console.print("\n[dodger_blue1]Testing Profile Name (get/set)...[/dodger_blue1]")
+    try:
+        original_name = spkr.get_profile_name()
+        spkr.set_profile_name("Test Profile")
+        time.sleep(0.5)
+        name = spkr.get_profile_name()
+        if name == "Test Profile":
+            console.print(f"[green]✓[/green] Profile name: '{name}'")
+            USER_CONFIRMATION["profile_name"] = True
+            # Restore original name
+            spkr.set_profile_name(original_name)
+        else:
+            console.print(f"[red]✗[/red] Expected 'Test Profile', got '{name}'")
+            USER_CONFIRMATION["profile_name"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["profile_name"] = False
+
+    # Test high-pass filter
+    console.print("\n[dodger_blue1]Testing High-Pass Filter (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_high_pass_filter(True, 80)
+        time.sleep(0.5)
+        hp_enabled, hp_freq = spkr.get_high_pass_filter()
+        if hp_enabled and hp_freq == 80:
+            console.print(f"[green]✓[/green] High-pass filter: enabled at {hp_freq} Hz")
+            USER_CONFIRMATION["high_pass_filter"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected enabled/80, got {hp_enabled}/{hp_freq}")
+            USER_CONFIRMATION["high_pass_filter"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["high_pass_filter"] = False
+
+    # Test audio polarity
+    console.print("\n[dodger_blue1]Testing Audio Polarity (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_audio_polarity("normal")
+        time.sleep(0.5)
+        polarity = spkr.get_audio_polarity()
+        if polarity == "normal":
+            console.print(f"[green]✓[/green] Audio polarity: {polarity}")
+            USER_CONFIRMATION["audio_polarity"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 'normal', got '{polarity}'")
+            USER_CONFIRMATION["audio_polarity"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["audio_polarity"] = False
+
+    # Test update_dsp_setting (generic method)
+    console.print("\n[dodger_blue1]Testing update_dsp_setting()...[/dodger_blue1]")
+    try:
+        spkr.update_dsp_setting("trebleAmount", 0)
+        time.sleep(0.5)
+        treble = spkr.get_treble_amount()
+        if treble == 0:
+            console.print(f"[green]✓[/green] update_dsp_setting: trebleAmount set to 0")
+            USER_CONFIRMATION["update_dsp_setting"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 0, got {treble}")
+            USER_CONFIRMATION["update_dsp_setting"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["update_dsp_setting"] = False
+
+    # Count successes
+    dsp_tests = [
+        "eq_get_profile", "dsp_desk_mode", "dsp_wall_mode", "dsp_bass_extension",
+        "dsp_treble", "dsp_balance", "dsp_phase_correction", "profile_name",
+        "high_pass_filter", "audio_polarity", "update_dsp_setting"
+    ]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in dsp_tests])
+
+    if passed == len(dsp_tests):
+        console.print(f"\n[bold green]All DSP/EQ/Filter tests passed! ({passed}/{len(dsp_tests)}) 🎉[/bold green]")
+    else:
+        console.print(f"\n[bold orange1]DSP/EQ/Filter tests: {passed}/{len(dsp_tests)} passed[/bold orange1]")
+
+
+def subwoofer_test():
+    """Test ALL subwoofer control features (6 methods)"""
+    rule_msg("Subwoofer Control")
+    console.print("The script will now test subwoofer control features.")
+    console.print("[orange1]These tests require a connected subwoofer[/orange1]")
+    console.print("[orange1]Skip this section if no subwoofer is connected[/orange1]")
+
+    if not NON_INTERACTIVE:
+        skip = input("Do you have a subwoofer connected? (y/n): ")
+        if skip.lower() != 'y':
+            console.print("[yellow]Skipping subwoofer tests[/yellow]")
+            return
+    else:
+        console.print("[yellow]Non-interactive mode: assuming no subwoofer connected[/yellow]")
+        console.print("[yellow]Skipping tests that change subwoofer settings[/yellow]")
+
+    prompt_continue()
+
+    # Test subwoofer enable/disable
+    console.print("\n[dodger_blue1]Testing Subwoofer Enable (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_subwoofer_enabled(True)
+        time.sleep(0.5)
+        enabled = spkr.get_subwoofer_enabled()
+        if enabled:
+            console.print(f"[green]✓[/green] Subwoofer: enabled")
+            USER_CONFIRMATION["sub_enable"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected True, got {enabled}")
+            USER_CONFIRMATION["sub_enable"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["sub_enable"] = False
+
+    # Test subwoofer gain
+    console.print("\n[dodger_blue1]Testing Subwoofer Gain (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_subwoofer_gain(5)
+        time.sleep(0.5)
+        gain = spkr.get_subwoofer_gain()
+        if gain == 5:
+            console.print(f"[green]✓[/green] Subwoofer gain: {gain} dB")
+            USER_CONFIRMATION["sub_gain"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 5, got {gain}")
+            USER_CONFIRMATION["sub_gain"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["sub_gain"] = False
+
+    # Test subwoofer polarity
+    console.print("\n[dodger_blue1]Testing Subwoofer Polarity (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_subwoofer_polarity("normal")
+        time.sleep(0.5)
+        polarity = spkr.get_subwoofer_polarity()
+        if polarity == "normal":
+            console.print(f"[green]✓[/green] Subwoofer polarity: {polarity}")
+            USER_CONFIRMATION["sub_polarity"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 'normal', got '{polarity}'")
+            USER_CONFIRMATION["sub_polarity"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["sub_polarity"] = False
+
+    # Test subwoofer preset
+    console.print("\n[dodger_blue1]Testing Subwoofer Preset (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_subwoofer_preset("kube8b")
+        time.sleep(0.5)
+        preset = spkr.get_subwoofer_preset()
+        if preset == "kube8b":
+            console.print(f"[green]✓[/green] Subwoofer preset: {preset}")
+            USER_CONFIRMATION["sub_preset"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 'kube8b', got '{preset}'")
+            USER_CONFIRMATION["sub_preset"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["sub_preset"] = False
+
+    # Test subwoofer low-pass filter
+    console.print("\n[dodger_blue1]Testing Subwoofer Low-Pass (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_subwoofer_lowpass(80)
+        time.sleep(0.5)
+        lowpass = spkr.get_subwoofer_lowpass()
+        if lowpass == 80:
+            console.print(f"[green]✓[/green] Subwoofer low-pass: {lowpass} Hz")
+            USER_CONFIRMATION["sub_lowpass"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected 80, got {lowpass}")
+            USER_CONFIRMATION["sub_lowpass"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["sub_lowpass"] = False
+
+    # Test subwoofer stereo mode
+    console.print("\n[dodger_blue1]Testing Subwoofer Stereo (get/set)...[/dodger_blue1]")
+    try:
+        spkr.set_subwoofer_stereo(False)
+        time.sleep(0.5)
+        stereo = spkr.get_subwoofer_stereo()
+        if stereo == False:
+            console.print(f"[green]✓[/green] Subwoofer stereo: disabled")
+            USER_CONFIRMATION["sub_stereo"] = True
+        else:
+            console.print(f"[red]✗[/red] Expected False, got {stereo}")
+            USER_CONFIRMATION["sub_stereo"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["sub_stereo"] = False
+
+    # Count successes
+    sub_tests = ["sub_enable", "sub_gain", "sub_polarity", "sub_preset", "sub_lowpass", "sub_stereo"]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in sub_tests])
+
+    if passed == len(sub_tests):
+        console.print(f"\n[bold green]All subwoofer tests passed! ({passed}/{len(sub_tests)}) 🎉[/bold green]")
+    else:
+        console.print(f"\n[bold orange1]Subwoofer tests: {passed}/{len(sub_tests)} passed[/bold orange1]")
+
+
+def xio_specific_test():
+    """Test XIO soundbar-specific features (sound_profile, wall_mounted)"""
+    rule_msg("XIO Soundbar Features")
+    console.print("The script will now test XIO-specific features.")
+    console.print("[orange1]These features are only available on KEF XIO soundbars[/orange1]")
+    console.print("[orange1]Skip this section if you don't have an XIO[/orange1]")
+
+    skip = input("Are you testing a KEF XIO soundbar? (y/n): ")
+    if skip.lower() != 'y':
+        console.print("[yellow]Skipping XIO-specific tests[/yellow]")
+        return
+
+    prompt_continue()
+
+    # Test sound profile (XIO)
+    console.print("\n[dodger_blue1]Testing Sound Profile (get/set)...[/dodger_blue1]")
+    console.print("[orange1]Sound profiles: default, music, movie, night, dialogue, direct[/orange1]")
+    try:
+        spkr.set_sound_profile("movie")
+        time.sleep(0.5)
+        profile = spkr.get_sound_profile()
+        if profile == "movie":
+            console.print(f"[green]✓[/green] Sound profile: {profile}")
+            USER_CONFIRMATION["xio_sound_profile"] = True
+            # Restore to default
+            spkr.set_sound_profile("default")
+        else:
+            console.print(f"[red]✗[/red] Expected 'movie', got '{profile}'")
+            USER_CONFIRMATION["xio_sound_profile"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["xio_sound_profile"] = False
+
+    # Test wall mounted (XIO)
+    console.print("\n[dodger_blue1]Testing Wall Mounted (get/set)...[/dodger_blue1]")
+    try:
+        original_mounted = spkr.get_wall_mounted()
+        spkr.set_wall_mounted(True)
+        time.sleep(0.5)
+        mounted = spkr.get_wall_mounted()
+        if mounted == True:
+            console.print(f"[green]✓[/green] Wall mounted: True")
+            USER_CONFIRMATION["xio_wall_mounted"] = True
+            # Restore original setting
+            spkr.set_wall_mounted(original_mounted)
+        else:
+            console.print(f"[red]✗[/red] Expected True, got {mounted}")
+            USER_CONFIRMATION["xio_wall_mounted"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["xio_wall_mounted"] = False
+
+    # Count successes
+    xio_tests = ["xio_sound_profile", "xio_wall_mounted"]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in xio_tests])
+
+    if passed == len(xio_tests):
+        console.print(f"\n[bold green]All XIO tests passed! ({passed}/{len(xio_tests)}) 🎉[/bold green]")
+    else:
+        console.print(f"\n[bold orange1]XIO tests: {passed}/{len(xio_tests)} passed[/bold orange1]")
+
+
+def firmware_test():
+    """Test ALL firmware update features (3 methods + module function)"""
+    rule_msg("Firmware Update")
+    console.print("The script will now test firmware update features.")
+    console.print("[orange1]This will NOT install any updates, only check for them[/orange1]")
+    prompt_continue()
+
+    # Test check for updates
+    console.print("\n[dodger_blue1]Testing check_for_firmware_update()...[/dodger_blue1]")
+    try:
+        result = spkr.check_for_firmware_update()
+        console.print(f"[green]✓[/green] Check for updates triggered: {result}")
+        USER_CONFIRMATION["firmware_check"] = True
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["firmware_check"] = False
+
+    # Test get update status
+    console.print("\n[dodger_blue1]Testing get_firmware_update_status()...[/dodger_blue1]")
+    try:
+        time.sleep(2)  # Wait for check to complete
+        status = spkr.get_firmware_update_status()
+        console.print(f"[green]✓[/green] Update status: {status}")
+        USER_CONFIRMATION["firmware_status"] = True
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["firmware_status"] = False
+
+    # Test get release notes (module-level function)
+    console.print("\n[dodger_blue1]Testing get_kef_firmware_releases()...[/dodger_blue1]")
+    try:
+        releases = pkf.get_kef_firmware_releases()
+        if releases and len(releases) > 0:
+            console.print(f"[green]✓[/green] Found {len(releases)} firmware releases")
+            USER_CONFIRMATION["firmware_releases"] = True
+        else:
+            console.print(f"[red]✗[/red] No releases found")
+            USER_CONFIRMATION["firmware_releases"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["firmware_releases"] = False
+
+    firmware_tests = ["firmware_check", "firmware_status", "firmware_releases"]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in firmware_tests])
+
+    if passed == len(firmware_tests):
+        console.print(f"\n[bold green]All firmware tests passed! ({passed}/{len(firmware_tests)}) 🎉[/bold green]")
+    else:
+        console.print(f"\n[bold orange1]Firmware tests: {passed}/{len(firmware_tests)} passed[/bold orange1]")
+
+
 if __name__ == "__main__":
-    # ====== Check testing utility version ======
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description='Test pykefcontrol library features',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Discover KEF speakers on the network:
+  python3 testing.py --discover
+  python3 testing.py --discover --network 192.168.16.0/24
+
+  # Interactive mode (default):
+  python3 testing.py
+
+  # Non-interactive mode - run specific test:
+  python3 testing.py --host 192.168.16.22 --test dsp
+  python3 testing.py --host 192.168.16.22 --test subwoofer
+  python3 testing.py --host 192.168.16.22 --test firmware
+
+  # Run all tests non-interactively:
+  python3 testing.py --host 192.168.16.22 --test all --model 0
+
+  # Quick connection test:
+  python3 testing.py --host 192.168.16.22 --test info
+        """
+    )
+    parser.add_argument('--discover', action='store_true',
+                       help='Discover KEF speakers on the network')
+    parser.add_argument('--network', type=str,
+                       help='Network range to scan (e.g., 192.168.16.0/24). Auto-detects if not specified.')
+    parser.add_argument('--host', type=str, help='KEF speaker IP address')
+    parser.add_argument('--test', type=str,
+                       choices=['info', 'dsp', 'subwoofer', 'xio', 'firmware', 'all'],
+                       help='Specific test to run (non-interactive mode)')
+    parser.add_argument('--model', type=int, choices=[0, 1, 2],
+                       help='Model: 0=LSX II, 1=LS50W2, 2=LS60 (required for --test all)')
+
+    args = parser.parse_args()
+
+    # If --discover flag is set, run network discovery
+    if args.discover:
+        console.print("[bold cyan3]KEF Speaker Network Discovery[/bold cyan3]")
+        newline()
+        speakers = discover_kef_speakers(network_range=args.network)
+
+        if speakers:
+            console.print(f"\n[bold green]Discovered {len(speakers)} KEF speaker(s):[/bold green]")
+            from rich.table import Table
+            table = Table(show_header=True, header_style="bold cyan")
+            table.add_column("IP Address", style="cyan")
+            table.add_column("Name", style="green")
+            table.add_column("Model", style="yellow")
+            table.add_column("Firmware", style="magenta")
+            table.add_column("MAC Address", style="blue")
+
+            for speaker in speakers:
+                table.add_row(
+                    speaker['ip'],
+                    speaker['name'],
+                    speaker['model'],
+                    speaker['firmware'],
+                    speaker['mac']
+                )
+
+            console.print(table)
+        else:
+            console.print("[bold red]No KEF speakers found on the network[/bold red]")
+
+        sys.exit(0)
+
+    # If --host and --test provided, run in non-interactive mode
+    if args.host and args.test:
+        # Modify module globals directly using globals()
+        globals()['NON_INTERACTIVE'] = True
+        globals()['HOST'] = args.host
+        if args.model is not None:
+            globals()['MODEL_SELECTED'] = args.model
+
+        console.print(f"[cyan3]Non-Interactive Mode: Testing {args.test} on {globals()['HOST']}[/cyan3]")
+        newline()
+
+        try:
+            # Create speaker connection
+            globals()['spkr'] = pkf.KefConnector(globals()['HOST'])
+
+            if args.test == 'info':
+                if args.model is None:
+                    console.print("[bold red]Error: --model required for info test[/bold red]")
+                    sys.exit(1)
+                console.print("[bold]Speaker Information:[/bold]")
+                speaker_info()
+
+            elif args.test == 'dsp':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running DSP/EQ Tests:[/bold]")
+                dsp_eq_test()
+
+            elif args.test == 'subwoofer':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Subwoofer Tests:[/bold]")
+                subwoofer_test()
+
+            elif args.test == 'xio':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running XIO Soundbar Tests:[/bold]")
+                xio_specific_test()
+
+            elif args.test == 'firmware':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Firmware Tests:[/bold]")
+                firmware_test()
+
+            elif args.test == 'all':
+                if args.model is None:
+                    console.print("[bold red]Error: --model required for --test all[/bold red]")
+                    sys.exit(1)
+                MODEL_SELECTED = args.model
+                console.print("[bold]Running All Tests:[/bold]")
+                system_infos()
+                speaker_info()
+                power_check()
+                source_check()
+                vol_test()
+                song_info()
+                track_control()
+                dsp_eq_test()
+                subwoofer_test()
+                xio_specific_test()
+                firmware_test()
+                sumup()
+
+        except Exception as e:
+            console.print(f"[bold red]Error: {e}[/bold red]")
+            sys.exit(1)
+
+        console.print("\n[bold green]Test completed![/bold green]")
+        sys.exit(0)
+
+    # ====== Interactive Mode (original behavior) ======
     newline()
     rule_msg("Pykefcontrol Library Testing".upper(), sep="=")
 
@@ -580,7 +1249,11 @@ if __name__ == "__main__":
         \n\t- [bold]Speaker volume control[/bold]\
         \n\t- [bold]Speaker mute control[/bold]\
         \n\t- [bold]Song Info[/bold] (get title/artist/album)\
-        \n\t- [bold]Track control[/bold] (next/prev/play/pause)"
+        \n\t- [bold]Track control[/bold] (next/prev/play/pause)\
+        \n\t- [bold]DSP/EQ Control[/bold] (11 methods: desk/wall mode, bass, treble, balance, phase, filters, profile name)\
+        \n\t- [bold]Subwoofer Control[/bold] (6 methods: enable, gain, polarity, preset, lowpass, stereo)\
+        \n\t- [bold]XIO Soundbar Features[/bold] (2 methods: sound profile, wall mounted)\
+        \n\t- [bold]Firmware Update[/bold] (3 methods + release notes parser)"
     )
     prompt_continue()
     system_infos()
@@ -599,6 +1272,14 @@ if __name__ == "__main__":
     newline()
     track_control()
     newline()
+    dsp_eq_test()
+    newline()
+    subwoofer_test()
+    newline()
+    xio_specific_test()
+    newline()
+    firmware_test()
+    newline()
     sumup()
     rule_msg("End of tests")
     console.print("Thanks for using this script !")
@@ -615,4 +1296,4 @@ if __name__ == "__main__":
         "[bold green]Thanks for helping improving Pykefcontrol ! 🤗[/bold green]"
     )
 
-sys.exit()
+    sys.exit()
