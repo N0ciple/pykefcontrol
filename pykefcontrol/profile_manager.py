@@ -3,6 +3,10 @@ KEF EQ Profile Management
 
 Handles saving, loading, and managing EQ profiles for KEF speakers.
 Profiles are stored as JSON files in a configurable directory.
+
+Note: This module is for standalone/CLI usage. The Home Assistant integration
+uses HA's native Storage API instead of JSON files for profile management.
+See README.md for HA integration implementation details.
 """
 
 import json

@@ -324,10 +324,14 @@ await my_speaker.set_high_pass_filter(enabled=True, freq_hz=80.0)
 
 Save, load, and manage custom EQ profiles. Profiles are stored as JSON files and can be shared across speakers or backed up.
 
-**Profile Storage:**
-- Profiles are saved to `~/.kef_profiles/` (or `/config/.kef_profiles/` in Home Assistant)
+**⚠️ Note for Home Assistant Users:**
+The Home Assistant integration uses HA's native Storage API for profile management instead of these JSON file methods. These methods are provided for standalone Python scripts and CLI usage. If you're using this library through Home Assistant, profile management is handled automatically by the integration.
+
+**Profile Storage (Standalone/CLI Usage):**
+- Profiles are saved to `~/.kef_profiles/` (or custom directory via `profile_dir` parameter)
 - Each profile includes all DSP/EQ settings, metadata, and timestamps
 - Profiles can be exported/imported as JSON files for sharing or backup
+- Not used by Home Assistant integration (HA uses `.storage/` instead)
 
 ```python
 # Save current speaker settings as a named profile
@@ -1829,6 +1833,84 @@ while True:
 ```
 
 See test suite in `testing.py` for complete feature coverage (22 automated tests).
+
+---
+
+## 🏠 Home Assistant Integration Notes
+
+### Profile Management in Home Assistant
+
+The Home Assistant integration for KEF speakers uses **HA's native Storage API** instead of the JSON file-based ProfileManager included in this library. This provides better integration with HA's backup system and follows HA best practices.
+
+**For Home Assistant Integration Developers:**
+
+Use `homeassistant.helpers.storage.Store` for profile storage:
+
+```python
+from homeassistant.helpers.storage import Store
+from datetime import datetime
+
+STORAGE_VERSION = 1
+STORAGE_KEY = "kef_connector.profiles"
+
+class KefProfileStorage:
+    """Manage KEF EQ profiles using HA Storage API."""
+
+    def __init__(self, hass, speaker_mac):
+        self.store = Store(hass, STORAGE_VERSION, f"{STORAGE_KEY}.{speaker_mac}")
+
+    async def async_save_profile(self, name, profile_data, description=""):
+        """Save profile to HA storage (.storage/kef_connector.profiles.{mac})."""
+        profiles = await self.store.async_load() or {}
+        profiles[name] = {
+            "name": name,
+            "description": description,
+            "created_at": datetime.now().isoformat() if name not in profiles
+                         else profiles[name].get("created_at"),
+            "modified_at": datetime.now().isoformat(),
+            "profile_data": profile_data
+        }
+        await self.store.async_save(profiles)
+
+    async def async_load_profile(self, name):
+        """Load profile from HA storage."""
+        profiles = await self.store.async_load() or {}
+        if name not in profiles:
+            raise ValueError(f"Profile '{name}' not found")
+        return profiles[name]["profile_data"]
+
+    async def async_list_profiles(self):
+        """List all saved profiles."""
+        profiles = await self.store.async_load() or {}
+        return list(profiles.keys())
+```
+
+**Integration with media_player entity:**
+
+```python
+@property
+def sound_mode(self):
+    """Return current profile name from speaker."""
+    return self.coordinator.data.get("profile_name", "Expert")
+
+@property
+def sound_mode_list(self):
+    """Return list of saved profiles."""
+    return self._cached_profile_list
+
+async def async_select_sound_mode(self, sound_mode):
+    """Load and apply saved profile."""
+    profile_data = await self._profile_storage.async_load_profile(sound_mode)
+    await self.coordinator.speaker.set_eq_profile(profile_data)
+    await self.coordinator.async_request_refresh()
+```
+
+**Key points:**
+- ✅ Profiles stored per-speaker using MAC address: `.storage/kef_connector.profiles.XX_XX_XX_XX_XX_XX`
+- ✅ Integrated with HA backups automatically
+- ✅ Fully async operation
+- ✅ Use `sound_mode` entity feature for profile selection
+- ✅ Add custom services for save/delete/rename operations
 
 ---
 
