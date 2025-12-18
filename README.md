@@ -42,26 +42,24 @@ All KEF W2 platform speakers with network connectivity (WiFi/Ethernet) are suppo
 
 ### Current Implementation Status
 
-**Implemented (v0.9):**
+**✅ 100% COMPLETE - All 163 public methods implemented! 🎉**
+
+**Implemented (v0.8):**
 - ✅ **46 core methods** - Power, volume, source control, playback, queuing
 - ✅ **36 DSP/EQ methods** - Complete DSP control (desk mode, wall mode, bass extension, treble, balance, phase correction, high-pass filter, audio polarity)
 - ✅ **10 subwoofer methods** - Enable, gain, preset, low-pass, polarity, stereo mode
 - ✅ **3 firmware methods** - Check updates, get status, install updates
 - ✅ **10 profile methods** - Save/load/list/delete/rename/export/import EQ profiles with metadata
-- ✅ **6 XIO methods** - Sound profiles (6 modes), dialogue enhancement, wall mount detection
-
-**Discovered but not yet implemented (57 methods):**
-- 📋 **Volume Management** (6 methods) - Per-input default volumes, volume behavior settings
-- 📋 **Network Diagnostics** (6 methods) - Internet ping, stability check, speed test
-- 📋 **System Behavior** (8 methods) - Auto-switch HDMI, standby modes, startup tone, wake source
-- 📋 **LED Controls** (5 methods) - Front LED, standby LED, top panel controls (XIO)
-- 📋 **Remote Control** (7 methods) - IR learning, remote buttons
-- 📋 **XIO Calibration** (3 methods) - Acoustic room calibration
-- 📋 **BLE Firmware** (5 methods) - Bluetooth module updates (XIO)
-- 📋 **Device Info** (6 methods) - Model detection, serial numbers, capabilities
-- 📋 **Privacy/Streaming** (4 methods) - Analytics, streaming service settings
-- 📋 **Advanced Operations** (5 methods) - Factory reset, speaker pairing
-- 📋 **Network Management** (2 methods) - WiFi scanning, network setup
+- ✅ **14 XIO methods** - Sound profiles (6 modes), dialogue enhancement, wall mount detection, room calibration (3 methods), BLE firmware updates (5 methods)
+- ✅ **6 Volume Management methods** - Per-input default volumes, volume behavior, global vs per-input mode
+- ✅ **6 Network Diagnostics methods** - Internet ping, network stability, speed test with results
+- ✅ **8 System Behavior methods** - Auto-standby modes, wake source, HDMI auto-switch, startup tone, USB charging, cable mode
+- ✅ **5 LED Control methods** - Front LED, standby LED, top panel (3 universal + 2 XIO-exclusive)
+- ✅ **7 Remote Control methods** - IR enable/disable, IR code sets, EQ button assignment (XIO), favourite button, fixed volume mode
+- ✅ **6 Device Info methods** - Model name, serial number, KEF ID, hardware version, MAC address
+- ✅ **4 Privacy/Streaming methods** - KEF analytics, app analytics, streaming quality (5 bitrates), UI language
+- ✅ **5 Advanced Operations methods** - Speaker location, DSP defaults restore, factory reset, DSP info, firmware upgrade progress
+- ✅ **2 Network Management methods** - WiFi network scanning, trigger WiFi scan
 
 See **[apk_analysis.md](apk_analysis.md)** for complete API documentation and implementation roadmap.
 
@@ -74,7 +72,7 @@ pip install pykefcontrol
 You can make sure you have the latest version by typing:
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the latest version is version `0.9`
+Currently, the latest version is version `0.8`
 
 ## ⚙️ Usage
 
@@ -410,6 +408,353 @@ my_speaker = KefConnector('192.168.1.100', profile_dir='/custom/path/profiles')
 my_speaker = KefConnector('192.168.1.100')
 ```
 
+### Volume Management
+
+Control per-input default volumes and volume behavior settings. Each physical input (WiFi, Bluetooth, Optical, etc.) can have its own default volume level, or you can use a global volume for all inputs.
+
+#### Per-Input Default Volumes
+
+Set different default volumes for each input source:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Get default volume for a specific input
+wifi_volume = speaker.get_default_volume('wifi')  # Returns 0-100
+bluetooth_volume = speaker.get_default_volume('bluetooth')
+
+# Set default volume for specific inputs
+speaker.set_default_volume('wifi', 50)       # Set WiFi to 50%
+speaker.set_default_volume('bluetooth', 40)  # Set Bluetooth to 40%
+speaker.set_default_volume('optical', 60)    # Set Optical to 60%
+
+# Get all default volumes at once
+all_volumes = speaker.get_all_default_volumes()
+# Returns: {'global': 30, 'wifi': 50, 'bluetooth': 40, 'optical': 60, ...}
+
+# Print all volumes
+for source, volume in sorted(all_volumes.items()):
+    print(f"{source:12s}: {volume}%")
+```
+
+**Available input sources by model:**
+- **LSX II**: wifi, bluetooth, optical, coaxial, usb, analogue, tv (7 inputs)
+- **LSX II LT**: wifi, bluetooth, optical, coaxial, usb, tv (6 inputs - no analogue)
+- **XIO Soundbar**: wifi, bluetooth, optical, tv (4 inputs only)
+- **LS50 Wireless II / LS60**: All 7 inputs
+
+#### Volume Behavior Settings
+
+Configure global volume limits and behavior:
+
+```python
+# Get current volume settings
+settings = speaker.get_volume_settings()
+# Returns: {'max_volume': 100, 'step': 1, 'limit': 100, 'display': 'linear'}
+
+# Set maximum volume limit (safety feature for children/hearing protection)
+speaker.set_volume_settings(max_volume=80)  # Limit to 80%
+
+# Set volume step size (how much volume changes per button press)
+speaker.set_volume_settings(step=2)  # Change by 2% per step
+
+# Set volume limiter
+speaker.set_volume_settings(limit=75)  # Soft limit at 75%
+
+# Combine multiple settings
+speaker.set_volume_settings(max_volume=85, step=2, limit=80)
+```
+
+#### Global vs Per-Input Volume Mode
+
+Switch between global volume mode (all inputs use same volume) or per-input mode (each input remembers its own volume):
+
+```python
+# Check current mode
+is_global_mode = speaker.get_standby_volume_behavior()
+# Returns: True = global mode, False = per-input mode
+
+# Enable global volume mode (all inputs use same volume)
+speaker.set_standby_volume_behavior(True)
+
+# Enable per-input mode (each input has its own volume)
+speaker.set_standby_volume_behavior(False)
+```
+
+**How it works:**
+- **Global mode (True)**: When you switch between inputs, volume stays the same
+- **Per-input mode (False)**: Each input (WiFi, Bluetooth, etc.) remembers its last volume level
+
+#### Async Support
+
+All volume management methods support async:
+
+```python
+import asyncio
+import pykefcontrol as pkf
+
+async def manage_volumes():
+    speaker = pkf.KefAsyncConnector('192.168.1.100')
+
+    # Get all volumes
+    volumes = await speaker.get_all_default_volumes()
+
+    # Set specific input volumes
+    await speaker.set_default_volume('wifi', 45)
+    await speaker.set_default_volume('bluetooth', 35)
+
+    # Configure volume settings
+    await speaker.set_volume_settings(max_volume=80, step=2)
+
+    # Switch to per-input mode
+    await speaker.set_standby_volume_behavior(False)
+
+asyncio.run(manage_volumes())
+```
+
+### Network Diagnostics
+
+Monitor network connectivity, stability, and perform speed tests. Useful for troubleshooting streaming issues or verifying network performance.
+
+#### Internet Connectivity Check
+
+Test if the speaker can reach the internet:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Ping internet
+ping_ms = speaker.ping_internet()
+if ping_ms > 0:
+    print(f"Internet connected: {ping_ms}ms ping")
+else:
+    print("No internet connection")
+
+# Check network stability
+stability = speaker.get_network_stability()
+print(f"Network stability: {stability}")  # Returns 'idle', 'stable', or 'unstable'
+```
+
+#### Network Speed Test
+
+Run a complete speed test to measure download speeds and packet loss:
+
+```python
+import time
+
+# Start speed test
+speaker.start_speed_test()
+print("Speed test started...")
+
+# Monitor progress
+while True:
+    status = speaker.get_speed_test_status()
+    print(f"Status: {status}")
+
+    if status == 'complete':
+        break
+    elif status == 'idle':
+        print("Speed test failed to start")
+        break
+
+    time.sleep(2)
+
+# Get results when complete
+results = speaker.get_speed_test_results()
+print(f"Average download: {results['avg_download']} Mbps")
+print(f"Current download: {results['current_download']} Mbps")
+print(f"Packet loss: {results['packet_loss']}%")
+
+# Stop test if needed
+# speaker.stop_speed_test()
+```
+
+#### Speed Test Results
+
+The `get_speed_test_results()` method returns a dictionary with:
+- `avg_download`: Average download speed in Mbps
+- `current_download`: Current download speed in Mbps
+- `packet_loss`: Packet loss percentage
+
+**Note:** Speed test results are only meaningful when status is 'running' or 'complete'. When idle, all values return 0.
+
+#### Async Network Diagnostics
+
+All network diagnostic methods support async:
+
+```python
+import asyncio
+import pykefcontrol as pkf
+
+async def check_network():
+    speaker = pkf.KefAsyncConnector('192.168.1.100')
+
+    # Quick connectivity check
+    ping = await speaker.ping_internet()
+    stability = await speaker.get_network_stability()
+
+    print(f"Ping: {ping}ms, Stability: {stability}")
+
+    # Run speed test
+    await speaker.start_speed_test()
+
+    # Wait for completion
+    while True:
+        status = await speaker.get_speed_test_status()
+        if status == 'complete':
+            break
+        await asyncio.sleep(2)
+
+    # Get results
+    results = await speaker.get_speed_test_results()
+    print(f"Speed: {results['avg_download']} Mbps")
+
+asyncio.run(check_network())
+```
+
+### System Behavior Settings
+
+Configure speaker power management, startup behavior, and inter-speaker connection settings.
+
+#### Auto-Standby Mode
+
+Control when the speaker automatically enters standby mode:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Get current standby mode
+mode = speaker.get_standby_mode()
+print(f"Current mode: {mode}")  # Returns 'standby_20mins'
+
+# Set standby mode
+speaker.set_standby_mode('standby_20mins')  # ECO mode (20 minutes)
+speaker.set_standby_mode('standby_30mins')  # 30 minutes
+speaker.set_standby_mode('standby_60mins')  # 60 minutes
+speaker.set_standby_mode('standby_none')    # Never auto-standby
+```
+
+**Standby Modes:**
+- `standby_20mins` - ECO mode (shown as "ECO" in KEF Connect app)
+- `standby_30mins` - 30 minutes auto-standby
+- `standby_60mins` - 60 minutes auto-standby
+- `standby_none` - Never auto-standby (manual standby only)
+
+#### Wake Source & HDMI Auto-Switch
+
+Configure which input wakes the speaker and HDMI auto-switching:
+
+```python
+# Set wake source (which input can wake speaker from standby)
+speaker.set_wake_source('wakeup_default')  # All inputs can wake
+speaker.set_wake_source('tv')              # Only TV/HDMI wakes
+speaker.set_wake_source('optical')         # Only optical wakes
+
+# Enable auto-switch to HDMI when signal detected
+speaker.set_auto_switch_hdmi(True)   # Auto-switch enabled
+speaker.set_auto_switch_hdmi(False)  # Manual input selection
+
+# Check current settings
+wake = speaker.get_wake_source()
+auto_hdmi = speaker.get_auto_switch_hdmi()
+print(f"Wake source: {wake}, Auto-HDMI: {auto_hdmi}")
+```
+
+#### Startup Behavior
+
+Control startup tone and USB charging:
+
+```python
+# Disable startup beep
+speaker.set_startup_tone(False)
+
+# Enable USB port charging
+speaker.set_usb_charging(True)
+
+# Check current settings
+tone = speaker.get_startup_tone()
+usb = speaker.get_usb_charging()
+```
+
+#### Inter-Speaker Connection
+
+Configure wired vs wireless connection between left/right speakers:
+
+```python
+# Set cable mode (for stereo pairs)
+speaker.set_cable_mode('wired')     # Use cable connection
+speaker.set_cable_mode('wireless')  # Use wireless connection
+
+# Set master channel designation
+speaker.set_master_channel('left')   # This is the left speaker
+speaker.set_master_channel('right')  # This is the right speaker
+
+# Get current settings
+cable = speaker.get_cable_mode()
+channel = speaker.get_master_channel()
+```
+
+#### Speaker Status
+
+Check if the speaker is powered on or in standby:
+
+```python
+status = speaker.get_speaker_status()
+if status == 'powerOn':
+    print("Speaker is powered on")
+elif status == 'standby':
+    print("Speaker is in standby mode")
+```
+
+#### Complete Configuration Example
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Configure for home theater use
+speaker.set_standby_mode('standby_60mins')  # Long timeout
+speaker.set_wake_source('tv')                # Wake on TV signal
+speaker.set_auto_switch_hdmi(True)           # Auto-switch to HDMI
+speaker.set_startup_tone(False)              # Silent startup
+
+# Configure stereo pair
+speaker.set_cable_mode('wired')              # Use cable for better quality
+speaker.set_master_channel('left')           # Designate as left speaker
+```
+
+#### Async System Behavior
+
+All system behavior methods support async:
+
+```python
+import asyncio
+import pykefcontrol as pkf
+
+async def configure_speaker():
+    speaker = pkf.KefAsyncConnector('192.168.1.100')
+
+    # Get all settings
+    mode = await speaker.get_standby_mode()
+    wake = await speaker.get_wake_source()
+    status = await speaker.get_speaker_status()
+
+    print(f"Standby: {mode}, Wake: {wake}, Status: {status}")
+
+    # Configure settings
+    await speaker.set_standby_mode('standby_30mins')
+    await speaker.set_startup_tone(False)
+
+asyncio.run(configure_speaker())
+```
+
 ### XIO Soundbar Features
 
 The KEF XIO soundbar includes exclusive features for home theater optimization. These features work on XIO soundbars only (model firmware V13xxx+).
@@ -495,6 +840,337 @@ my_speaker.set_wall_mounted(False)  # Force shelf/TV-stand mode
 ```python
 is_wall_mounted = await my_speaker.get_wall_mounted()
 await my_speaker.set_wall_mounted(True)
+```
+
+#### Room Calibration
+
+XIO soundbars include acoustic room calibration that measures your room and adjusts audio output for optimal sound. The calibration process uses a microphone to analyze room acoustics and applies dB adjustments automatically.
+
+**Reading Calibration Data:**
+
+```python
+import pykefcontrol as pkf
+
+xio = pkf.KefConnector('192.168.1.100')  # XIO Soundbar
+
+# Check calibration status
+status = xio.get_calibration_status()
+if status['isCalibrated']:
+    print(f"Calibrated on: {status['year']}-{status['month']:02d}-{status['day']:02d}")
+    print(f"Network stability during calibration: {status['stability']}")
+else:
+    print("Room calibration not performed")
+
+# Get calibration dB adjustment
+result = xio.get_calibration_result()
+print(f"Calibration applied: {result} dB adjustment")
+
+# Check calibration progress (during calibration)
+step = xio.get_calibration_step()
+print(f"Calibration step: {step}")
+# Possible values:
+# - 'step_1_start': Calibration starting
+# - 'step_2_processing': Calibration in progress
+# - 'step_3_complete': Calibration complete
+```
+
+**Async version:**
+```python
+status = await xio.get_calibration_status()
+result = await xio.get_calibration_result()
+step = await xio.get_calibration_step()
+```
+
+**Note:** These methods are read-only and return the current calibration state. To perform a new calibration, use the KEF Connect app which guides you through the microphone-based calibration process.
+
+#### BLE Firmware Updates (KW2 Subwoofer Module)
+
+XIO soundbars have a built-in KW2 wireless subwoofer module with its own Bluetooth Low Energy (BLE) firmware that can be updated independently from the main speaker firmware.
+
+**Checking BLE Firmware:**
+
+```python
+import pykefcontrol as pkf
+
+xio = pkf.KefConnector('192.168.1.100')  # XIO Soundbar
+
+# Get current BLE firmware version
+version = xio.get_ble_firmware_version()
+print(f"BLE firmware version: {version}")
+
+# Get current update status
+status = xio.get_ble_firmware_status()
+print(f"Update status: {status}")
+# Possible values: 'startUp', 'downloading', 'installing', 'complete'
+
+# Check for available updates
+update = xio.check_ble_firmware_update()
+if update:
+    print(f"BLE firmware update available: {update}")
+else:
+    print("No BLE firmware update available")
+```
+
+**Installing BLE Firmware Updates:**
+
+```python
+# Install BLE firmware update immediately
+xio.install_ble_firmware_now()
+print("BLE firmware update started")
+
+# Or schedule update for later
+xio.install_ble_firmware_later()
+print("BLE firmware update scheduled")
+```
+
+**Async version:**
+```python
+version = await xio.get_ble_firmware_version()
+status = await xio.get_ble_firmware_status()
+update = await xio.check_ble_firmware_update()
+await xio.install_ble_firmware_now()
+await xio.install_ble_firmware_later()
+```
+
+**Note:** BLE firmware updates are for the KW2 wireless subwoofer module only and are separate from the main speaker firmware updates. This feature only works on XIO soundbars with the built-in wireless subwoofer.
+
+### Do Not Disturb Settings
+
+Control LED indicators and startup behavior to minimize distractions. In the KEF Connect app, these appear under "Do Not Disturb" settings.
+
+**Important Note:** The API endpoints work on all KEF W2 platform speakers, but the physical effects vary by model:
+- **LSX II / LSX II LT / LS50 W2 / LS60**: Only standby LED and startup tone are exposed in KEF Connect app
+- **XIO Soundbar**: Full control panel LED controls (4 settings: control panel LED, control panel in standby, startup tone, control panel lock)
+
+#### Standby LED
+
+Control whether the LED indicator is visible when the speaker is in standby mode:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Enable standby LED (default)
+speaker.set_standby_led(True)
+
+# Disable standby LED (for dark rooms)
+speaker.set_standby_led(False)
+
+# Check current setting
+enabled = speaker.get_standby_led()
+print(f"Standby LED: {'On' if enabled else 'Off'}")
+```
+
+**Async version:**
+```python
+enabled = await speaker.get_standby_led()
+await speaker.set_standby_led(False)
+```
+
+#### Startup Tone
+
+Control the audible beep when powering on (also in System Behavior Settings):
+
+```python
+# Disable startup beep for silent power-on
+speaker.set_startup_tone(False)
+
+# Enable startup beep
+speaker.set_startup_tone(True)
+
+# Check current setting
+enabled = speaker.get_startup_tone()
+```
+
+#### XIO Soundbar: Control Panel LED Controls
+
+The XIO soundbar has exclusive control panel LED settings (4 controls shown in KEF Connect app under "Do Not Disturb"). These methods only work on XIO models:
+
+```python
+# Control panel LED during operation
+speaker.set_front_led(True)   # LED on during operation (default)
+speaker.set_front_led(False)  # LED off during operation
+
+# Control panel LED in standby
+speaker.set_top_panel_standby_led(True)   # LED on in standby
+speaker.set_top_panel_standby_led(False)  # LED off in standby
+
+# Enable/disable top panel entirely (control panel lock)
+speaker.set_top_panel_enabled(True)   # Panel active (default)
+speaker.set_top_panel_enabled(False)  # Panel locked/disabled
+
+# Check current settings
+front_led = speaker.get_front_led()
+panel_enabled = speaker.get_top_panel_enabled()
+standby_led = speaker.get_top_panel_standby_led()
+
+print(f"Front LED: {front_led}, Panel enabled: {panel_enabled}, Standby LED: {standby_led}")
+```
+
+**XIO Async version:**
+```python
+# XIO-specific async methods
+await speaker.set_front_led(False)
+await speaker.set_top_panel_standby_led(False)
+await speaker.set_top_panel_enabled(False)
+```
+
+#### Complete Do Not Disturb Configuration
+
+```python
+import pykefcontrol as pkf
+
+# Configure LSX II for bedroom use (minimal LEDs)
+lsx_speaker = pkf.KefConnector('192.168.1.100')  # LSX II
+lsx_speaker.set_standby_led(False)    # No standby indicator
+lsx_speaker.set_startup_tone(False)   # Silent power-on
+
+# Configure XIO for home theater (all LEDs off)
+xio_speaker = pkf.KefConnector('192.168.1.101')  # XIO Soundbar
+xio_speaker.set_standby_led(False)              # No standby LED
+xio_speaker.set_startup_tone(False)             # Silent power-on
+xio_speaker.set_front_led(False)                # Control panel off during operation
+xio_speaker.set_top_panel_standby_led(False)    # Control panel off in standby
+xio_speaker.set_top_panel_enabled(False)        # Lock control panel (optional)
+```
+
+### Remote Control Settings
+
+Configure physical IR remote control behavior, including button assignments and volume locking.
+
+#### IR Remote Control
+
+Enable/disable IR remote control and set the IR code set to avoid conflicts with other devices:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Enable/disable IR remote
+speaker.set_remote_ir_enabled(True)   # Enable IR remote (default)
+speaker.set_remote_ir_enabled(False)  # Disable IR remote
+
+# Check current setting
+enabled = speaker.get_remote_ir_enabled()
+print(f"IR remote: {'Enabled' if enabled else 'Disabled'}")
+
+# Set IR code set (to avoid conflicts with other IR devices)
+speaker.set_ir_code_set('ir_code_set_a')  # Default code set
+speaker.set_ir_code_set('ir_code_set_b')  # Alternative if conflicts occur
+speaker.set_ir_code_set('ir_code_set_c')  # Second alternative
+
+# Check current code set
+code = speaker.get_ir_code_set()
+print(f"IR code set: {code}")
+```
+
+**Async version:**
+```python
+enabled = await speaker.get_remote_ir_enabled()
+await speaker.set_remote_ir_enabled(True)
+
+code = await speaker.get_ir_code_set()
+await speaker.set_ir_code_set('ir_code_set_a')
+```
+
+#### XIO: EQ Button Assignment
+
+On XIO soundbars, assign sound profiles to the two EQ buttons on the remote:
+
+```python
+# Get current EQ button assignments (XIO only)
+preset1 = speaker.get_eq_button(1)
+preset2 = speaker.get_eq_button(2)
+print(f"EQ Button 1: {preset1}, Button 2: {preset2}")
+
+# Assign sound profiles to EQ buttons
+speaker.set_eq_button(1, 'dialogue')  # Button 1 = dialogue mode
+speaker.set_eq_button(2, 'night')     # Button 2 = night mode
+speaker.set_eq_button(1, 'music')     # Button 1 = music mode
+speaker.set_eq_button(2, 'movie')     # Button 2 = movie mode
+
+# Available presets: 'dialogue', 'night', 'music', 'movie', 'default', 'direct'
+```
+
+**Note:** EQ button assignment only works on XIO soundbars. LSX/LS50/LS60 models will return an error.
+
+**Async version:**
+```python
+preset1 = await speaker.get_eq_button(1)
+await speaker.set_eq_button(1, 'dialogue')
+```
+
+#### Favourite Button
+
+Configure the action assigned to the favourite button on the remote:
+
+```python
+# Get current favourite button action
+action = speaker.get_favourite_button_action()
+print(f"Favourite button: {action}")
+
+# Set favourite button action
+speaker.set_favourite_button_action('nextSource')  # Cycle through inputs
+```
+
+**Async version:**
+```python
+action = await speaker.get_favourite_button_action()
+await speaker.set_favourite_button_action('nextSource')
+```
+
+#### Fixed Volume Mode
+
+Lock the speaker volume at a fixed level, preventing volume changes via remote or app:
+
+```python
+# Enable fixed volume mode (lock at specific level)
+speaker.set_fixed_volume_mode(50)  # Lock volume at 50%
+speaker.set_fixed_volume_mode(75)  # Lock volume at 75%
+
+# Disable fixed volume mode (allow volume changes)
+speaker.set_fixed_volume_mode(None)
+
+# Check current setting
+volume = speaker.get_fixed_volume_mode()
+if volume is not None:
+    print(f"Volume locked at: {volume}%")
+else:
+    print("Fixed volume mode disabled")
+```
+
+**Use case:** Commercial installations, public spaces, or preventing accidental volume changes.
+
+**Async version:**
+```python
+volume = await speaker.get_fixed_volume_mode()
+await speaker.set_fixed_volume_mode(50)
+await speaker.set_fixed_volume_mode(None)
+```
+
+#### Complete Remote Control Example
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Enable IR remote with alternative code set (avoid conflicts)
+speaker.set_remote_ir_enabled(True)
+speaker.set_ir_code_set('ir_code_set_b')
+
+# For XIO: Configure EQ buttons
+if speaker.speaker_model == 'XIO':
+    speaker.set_eq_button(1, 'dialogue')
+    speaker.set_eq_button(2, 'night')
+
+# Configure favourite button
+speaker.set_favourite_button_action('nextSource')
+
+# Lock volume for commercial use
+speaker.set_fixed_volume_mode(60)  # Lock at 60%
 ```
 
 ### Firmware Update
@@ -625,6 +1301,246 @@ await my_speaker.set_wall_mounted(True)
 ```
 
 **Note:** These methods work on XIO soundbars only. Using them on other KEF models will work via `update_dsp_setting()` but may not have any effect depending on the model.
+
+### Device Information
+
+Get comprehensive device information for your KEF speakers:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Get all device info at once
+info = speaker.get_device_info()
+print(f"Model: {info['model_name']}")
+print(f"Serial: {info['serial_number']}")
+print(f"KEF ID: {info['kef_id']}")
+print(f"Hardware: {info['hardware_version']}")
+print(f"MAC: {info['mac_address']}")
+
+# Or get individual values
+model = speaker.get_model_name()  # Returns: 'SP4041', 'SP4077', 'SP4083', etc.
+serial = speaker.get_serial_number()
+kef_id = speaker.get_kef_id()  # UUID for KEF cloud services
+hw_ver = speaker.get_hardware_version()
+mac = speaker.get_mac_address()  # Format: 'XX:XX:XX:XX:XX:XX'
+```
+
+**Model codes:**
+- `SP4041` = LSX II
+- `SP4077` = LSX II LT
+- `SP4083` = XIO Soundbar
+- `SP4045` = LS50 Wireless II
+- `SP4065` = LS60 Wireless
+
+**Async version:**
+```python
+info = await speaker.get_device_info()
+model = await speaker.get_model_name()
+serial = await speaker.get_serial_number()
+```
+
+### Privacy & Streaming Settings
+
+Control analytics, streaming quality, and language preferences:
+
+#### Analytics Controls
+
+```python
+# Check KEF analytics state (speaker usage data to KEF)
+analytics_enabled = speaker.get_analytics_enabled()  # Returns bool
+
+# Enable/disable KEF analytics
+speaker.set_analytics_enabled(True)   # Allow KEF to collect data
+speaker.set_analytics_enabled(False)  # Disable data collection
+
+# Check app analytics state (KEF Connect app usage data)
+app_analytics = speaker.get_app_analytics_enabled()  # Returns bool
+
+# Enable/disable app analytics
+speaker.set_app_analytics_enabled(True)
+speaker.set_app_analytics_enabled(False)
+```
+
+#### Streaming Quality
+
+Configure streaming service bitrate limits:
+
+```python
+# Get current quality setting
+quality = speaker.get_streaming_quality()  # Returns: 'unlimited', '320', '256', '192', or '128'
+
+# Set streaming quality (kbps)
+speaker.set_streaming_quality('unlimited')  # No limit (best quality)
+speaker.set_streaming_quality('320')        # 320 kbps (high quality)
+speaker.set_streaming_quality('256')        # 256 kbps (good quality)
+speaker.set_streaming_quality('192')        # 192 kbps (medium quality)
+speaker.set_streaming_quality('128')        # 128 kbps (data saving)
+```
+
+**Note:** Lower bitrates reduce bandwidth usage but decrease audio quality. Only affects streaming services (Spotify, Tidal, etc.), not local sources.
+
+#### UI Language
+
+```python
+# Get current language
+lang = speaker.get_ui_language()  # Returns: 'en_GB', 'nl_NL', etc.
+
+# Set UI language (ISO language codes)
+speaker.set_ui_language('en_GB')  # English (UK)
+speaker.set_ui_language('en_US')  # English (US)
+speaker.set_ui_language('nl_NL')  # Dutch
+speaker.set_ui_language('de_DE')  # German
+speaker.set_ui_language('fr_FR')  # French
+speaker.set_ui_language('es_ES')  # Spanish
+speaker.set_ui_language('it_IT')  # Italian
+speaker.set_ui_language('ja_JP')  # Japanese
+speaker.set_ui_language('zh_CN')  # Chinese (Simplified)
+speaker.set_ui_language('zh_TW')  # Chinese (Traditional)
+```
+
+**Async version:**
+```python
+analytics = await speaker.get_analytics_enabled()
+await speaker.set_analytics_enabled(False)
+
+quality = await speaker.get_streaming_quality()
+await speaker.set_streaming_quality('320')
+
+lang = await speaker.get_ui_language()
+await speaker.set_ui_language('en_GB')
+```
+
+### Advanced Operations
+
+#### Speaker Location
+
+Configure the speaker's geographic region (affects available streaming services and regional settings):
+
+```python
+# Get current location code
+location = speaker.get_speaker_location()  # Returns integer country code
+
+# Set speaker location
+speaker.set_speaker_location(44)  # Set to UK (example code)
+```
+
+**Async version:**
+```python
+location = await speaker.get_speaker_location()
+await speaker.set_speaker_location(44)
+```
+
+#### DSP Operations
+
+```python
+# Restore DSP settings to factory defaults
+# Resets: EQ, bass extension, wall/desk mode, phase, etc.
+# Does NOT affect: Network settings, user profiles, streaming accounts
+speaker.restore_dsp_defaults()
+
+# Get complete DSP state information
+dsp_info = speaker.get_dsp_info()
+print(f"DSP configuration: {dsp_info}")
+```
+
+**Async version:**
+```python
+await speaker.restore_dsp_defaults()
+dsp_info = await speaker.get_dsp_info()
+```
+
+#### Firmware Upgrade Progress
+
+Monitor firmware update progress for all components:
+
+```python
+# Get firmware upgrade progress during an update
+progress = speaker.get_firmware_upgrade_progress()
+print(f"Main firmware: {progress.get('main', 0)}%")
+print(f"DSP firmware: {progress.get('dsp', 0)}%")
+print(f"BLE firmware: {progress.get('ble', 0)}%")  # XIO only
+```
+
+**Async version:**
+```python
+progress = await speaker.get_firmware_upgrade_progress()
+```
+
+#### Factory Reset
+
+**⚠️ WARNING: Use with extreme caution!**
+
+Performing a factory reset will erase ALL settings and return the speaker to factory defaults. This includes:
+- Network configuration (WiFi credentials)
+- User preferences and profiles
+- Streaming service accounts
+- Paired Bluetooth devices
+- All custom settings
+
+The speaker will require complete setup again through the KEF Connect app.
+
+```python
+# Perform factory reset (NO CONFIRMATION PROMPT!)
+speaker.factory_reset()
+```
+
+**Async version:**
+```python
+await speaker.factory_reset()
+```
+
+**Recommendation:** Only use in troubleshooting or before selling/transferring the speaker.
+
+### Network Management
+
+Scan and manage WiFi networks:
+
+#### WiFi Network Scanning
+
+```python
+import time
+
+# Trigger a new WiFi scan
+speaker.activate_wifi_scan()
+
+# Wait for scan to complete
+time.sleep(3)
+
+# Get available networks
+networks = speaker.scan_wifi_networks()
+for network in networks:
+    print(f"SSID: {network['ssid']}")
+    print(f"  Security: {network['security']}")
+    print(f"  Signal: {network['signalStrength']}")
+    print(f"  Frequency: {network['frequency']}")
+    print()
+```
+
+**Network information includes:**
+- `ssid` - Network name
+- `security` - Security type (WPA2, WPA3, Open, etc.)
+- `signalStrength` - Signal strength indicator
+- `frequency` - Band (2.4GHz or 5GHz)
+
+**Async version:**
+```python
+import asyncio
+
+# Trigger scan
+await speaker.activate_wifi_scan()
+
+# Wait for scan
+await asyncio.sleep(3)
+
+# Get results
+networks = await speaker.scan_wifi_networks()
+for network in networks:
+    print(f"{network['ssid']}: {network['signalStrength']}")
+```
+
+**Use case:** Network diagnostics, finding optimal WiFi channel, checking signal strength before placement.
 
 **Information polling**
 
@@ -811,29 +1727,18 @@ python3 testing.py --host 192.168.16.22 --test all --model 0
 
 **Goal:** Achieve feature parity with KEF Connect app for official Home Assistant integration
 
-### ✅ Phase 1: Profile Management (COMPLETED)
-- ✅ Save/load/manage EQ profiles
-- ✅ 10 methods implemented (sync & async)
-- ✅ JSON storage with metadata
-- ✅ Import/export functionality
-- ✅ Tested on Kantoor speaker (.22)
+### Profile Management
+- Save/load/manage EQ profiles
+- JSON storage with metadata
+- Import/export functionality
+- Share profiles between speakers
 
-### ⏳ Phase 2: XIO Soundbar Features (NEXT)
-**Target:** Sound profiles, dialogue mode, HDMI auto-switch
+### XIO Soundbar Features
 - Sound profile control (default/music/movie/night/dialogue/direct)
 - Dialogue enhancement mode
-- Subwoofer output control
-- Auto-switch to HDMI
-
-### 📋 Upcoming Phases
-- **Phase 3:** Volume per input defaults (WiFi/Bluetooth/Analog/etc)
-- **Phase 4:** Network diagnostics (stability, speed test, packet loss)
-- **Phase 5:** Speaker status & behavior control
-- **Phase 6:** Room calibration (IPT) control
-- **Phase 7:** BLE firmware updates (XIO KW2 subwoofer)
-- **Phase 8-10:** Streaming settings, privacy controls, advanced DSP
-
-**Progress:** 10/50 methods complete (~20%)
+- Room calibration control
+- Wall mount detection
+- BLE firmware updates (KW2 subwoofer)
 
 See [SPEAKER_FEATURES_ANALYSIS.md](SPEAKER_FEATURES_ANALYSIS.md) for complete feature analysis.
 

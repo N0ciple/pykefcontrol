@@ -5,4 +5,4 @@ from pykefcontrol.kef_connector import (
 )
 from pykefcontrol.profile_manager import ProfileManager
 
-__version__ = "0.9"
+__version__ = "0.8"
