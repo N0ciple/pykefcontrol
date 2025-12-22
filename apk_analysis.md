@@ -227,17 +227,18 @@ get_all_default_volumes()  # Returns {'wifi': 30, 'bluetooth': 25, ...}
 # Volume behavior
 get_volume_settings()  # max_volume, step, limiter, display
 set_volume_settings(max_volume=None, step=None, limiter=None)
-get/set_standby_volume_behavior(reset)
+get/set_startup_volume_enabled()  # Enable/disable reset volume feature
+get/set_standby_volume_behavior()  # All Sources (True) vs Individual Sources (False)
 ```
 
 **Physical Inputs by Model:**
 
 | Model | WiFi | BT | Optical | Coaxial | USB | Analogue | HDMI/TV | Total |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **LSX II LT** | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ LPCM 2.0 | **6** |
-| **LSX II** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ LPCM 2.0 | **7** |
-| **LS50 Wireless II** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ LPCM 2.0 | **7** |
-| **LS60 Wireless** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ LPCM 2.0 | **7** |
+| **LSX II LT** | ✅ | ✅ | ✅ | ❌ | ✅ | ❌ | ✅ LPCM 2.0 | **5** |
+| **LSX II** | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ LPCM 2.0 | **6** |
+| **LS50 Wireless II** | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ LPCM 2.0 | **6** |
+| **LS60 Wireless** | ✅ | ✅ | ✅ | ✅ | ❌ | ✅ | ✅ LPCM 2.0 | **6** |
 | **XIO Soundbar** | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ Atmos/DTS:X | **4** |
 
 **API Source Names:**
@@ -264,12 +265,13 @@ settings:/kef/host/defaultVolumeUSB
 settings:/kef/host/defaultVolumeAnalogue
 settings:/kef/host/defaultVolumeTV
 settings:/kef/host/{maximumVolume,volumeStep,volumeLimit,volumeDisplay}
-settings:/kef/host/{standbyDefaultVol,advancedStandbyDefaultVol}
+settings:/kef/host/standbyDefaultVol  # Reset volume enabled (bool_: true=enabled)
+settings:/kef/host/advancedStandbyDefaultVol  # Mode (bool_: false=All Sources, true=Individual Sources)
 ```
 
 **Test Results:**
-- LSX II LT: ✅ 6 physical inputs (wifi, bluetooth, optical, coaxial, usb, tv) + global volume setting
-- LSX II: ✅ 7 physical inputs (wifi, bluetooth, optical, coaxial, usb, analogue, tv) + global volume setting
+- LSX II LT: ✅ 5 physical inputs (wifi, bluetooth, optical, usb, tv) + global volume setting
+- LSX II: ✅ 6 physical inputs (wifi, bluetooth, optical, usb, analogue, tv) + global volume setting
 - XIO: ✅ 4 physical inputs (wifi, bluetooth, optical, tv) + global volume setting + volumeDisplay = "linear"
 
 ---
@@ -353,7 +355,7 @@ API mapping:
 **Works on:** ALL models (top panel XIO-specific)
 
 ```python
-get/set_front_led(enabled)  # Front panel LED
+get/set_front_led(enabled)  # Front panel LED (NO VISIBLE EFFECT on any tested model)
 get/set_standby_led(enabled)  # Standby indicator
 get/set_top_panel_enabled(enabled)  # Touch panel
 get/set_top_panel_led(enabled)  # Top LED (XIO only)
@@ -367,9 +369,9 @@ settings:/kef/host/{topPanelLED,topPanelStandbyLED}
 ```
 
 **Test Results:**
-- LSX II LT: ✅ 3/5 (disableFrontLED=true, topPanel settings N/A)
-- LSX II: ✅ 3/5 (disableFrontLED=true, topPanel settings N/A)
-- XIO: ✅ 5/5 (all LEDs=false/disabled)
+- LSX II LT: ✅ 3/5 (disableFrontLED has no effect, topPanel settings N/A)
+- LSX II: ✅ 3/5 (disableFrontLED has no effect, topPanel settings N/A)
+- XIO: ✅ 4/5 (disableFrontLED has no effect, other LEDs work)
 
 ---
 
@@ -654,8 +656,8 @@ settings:/kef/host/maximumVolume
 settings:/kef/host/volumeLimit
 settings:/kef/host/volumeStep
 settings:/kef/host/volumeDisplay
-settings:/kef/host/standbyDefaultVol
-settings:/kef/host/advancedStandbyDefaultVol
+settings:/kef/host/standbyDefaultVol  # Reset volume enabled (bool_: true=enabled)
+settings:/kef/host/advancedStandbyDefaultVol  # Mode (bool_: false=All Sources, true=Individual Sources)
 ```
 
 #### DSP Settings (18 paths)

@@ -30,10 +30,10 @@ All KEF W2 platform speakers with network connectivity (WiFi/Ethernet) are suppo
 
 | Model | Type | Physical Inputs | Features | Tested |
 |---|---|---|---|---|
-| **LS50 Wireless II** | Bookshelf | WiFi, BT, Optical, USB, Analogue, HDMI | DSP, EQ, Sub out, HDMI eARC, MAT | ⚠️ Not tested |
-| **LS60 Wireless** | Floorstanding | WiFi, BT, Optical, USB, Analogue | DSP, EQ, Sub out, MAT | ⚠️ Not tested |
-| **LSX II** | Compact bookshelf | WiFi, BT, Optical, USB, Analogue | DSP, EQ, Sub out | ✅ Tested |
-| **LSX II LT** | Compact bookshelf | WiFi, BT, Optical, USB | DSP, EQ, Sub out | ✅ Tested |
+| **LS50 Wireless II** | Bookshelf | WiFi, BT, Optical, Coaxial, Analogue, HDMI | DSP, EQ, Sub out, HDMI eARC, MAT | ⚠️ Not tested |
+| **LS60 Wireless** | Floorstanding | WiFi, BT, Optical, Coaxial, Analogue, HDMI | DSP, EQ, Sub out, MAT | ⚠️ Not tested |
+| **LSX II** | Compact bookshelf | WiFi, BT, Optical, USB, Analogue, HDMI | DSP, EQ, Sub out | ✅ Tested |
+| **LSX II LT** | Compact bookshelf | WiFi, BT, Optical, USB, HDMI | DSP, EQ, Sub out | ✅ Tested |
 | **XIO Soundbar** | Soundbar (5.1.2) | WiFi, BT, Optical, HDMI eARC | DSP, EQ, Dolby Atmos, DTS:X, Sound profiles, Dialogue mode | ✅ Tested |
 
 **Incompatible Models:**
@@ -47,14 +47,14 @@ All KEF W2 platform speakers with network connectivity (WiFi/Ethernet) are suppo
 **Implemented (v0.8):**
 - ✅ **46 core methods** - Power, volume, source control, playback, queuing
 - ✅ **36 DSP/EQ methods** - Complete DSP control (desk mode, wall mode, bass extension, treble, balance, phase correction, high-pass filter, audio polarity)
-- ✅ **10 subwoofer methods** - Enable, gain, preset, low-pass, polarity, stereo mode
+- ✅ **10 subwoofer methods** - Enable, gain, preset, low-pass, polarity, stereo mode (stereo has no effect)
 - ✅ **3 firmware methods** - Check updates, get status, install updates
 - ✅ **10 profile methods** - Save/load/list/delete/rename/export/import EQ profiles with metadata
-- ✅ **14 XIO methods** - Sound profiles (6 modes), dialogue enhancement, wall mount detection, room calibration (3 methods), BLE firmware updates (5 methods)
+- ✅ **14 XIO methods** - Sound profiles (6 modes incl. dialogue), dialogueMode toggle (no effect), wall mount detection, room calibration (3 methods), BLE firmware updates (5 methods)
 - ✅ **6 Volume Management methods** - Per-input default volumes, volume behavior, global vs per-input mode
 - ✅ **6 Network Diagnostics methods** - Internet ping, network stability, speed test with results
 - ✅ **8 System Behavior methods** - Auto-standby modes, wake source, HDMI auto-switch, startup tone, USB charging, cable mode
-- ✅ **5 LED Control methods** - Front LED, standby LED, top panel (3 universal + 2 XIO-exclusive)
+- ✅ **5 LED Control methods** - Front LED (no visible effect), standby LED, top panel (3 universal + 2 XIO-exclusive)
 - ✅ **7 Remote Control methods** - IR enable/disable, IR code sets, EQ button assignment (XIO), favourite button, fixed volume mode
 - ✅ **6 Device Info methods** - Model name, serial number, KEF ID, hardware version, MAC address
 - ✅ **4 Privacy/Streaming methods** - KEF analytics, app analytics, streaming quality (5 bitrates), UI language
@@ -219,6 +219,8 @@ my_speaker.rename_profile("Living Room")  # Rename current profile
 # The profile ID remains the same when renaming
 
 # Desk Mode - compensates for speaker placement on a desk
+# Note: Only available on bookshelf speakers (LSX II, LSX II LT, LS50 Wireless II)
+#       Not available on LS60 (floorstanding) or XIO (soundbar)
 # Returns (enabled: bool, db_value: float)
 enabled, db = my_speaker.get_desk_mode()
 print(f"Desk mode: {enabled}, attenuation: {db} dB")
@@ -230,6 +232,8 @@ my_speaker.set_desk_mode(enabled=True, db_value=-3.0)
 my_speaker.set_desk_mode(enabled=False)
 
 # Wall Mode - compensates for speaker placement near walls
+# Note: Only available on bookshelf speakers (LSX II, LSX II LT, LS50 Wireless II)
+#       Not available on LS60 (floorstanding) or XIO (soundbar - use wall_mounted instead)
 enabled, db = my_speaker.get_wall_mode()
 my_speaker.set_wall_mode(enabled=True, db_value=-2.0)  # -10.0 to 0.0 dB
 
@@ -288,8 +292,17 @@ polarity = my_speaker.get_subwoofer_polarity()  # Returns "normal" or "inverted"
 my_speaker.set_subwoofer_polarity('normal')
 
 # Subwoofer stereo mode
+# Note: API field exists but has no audible effect on current firmware
 stereo = my_speaker.get_subwoofer_stereo()  # Returns bool
-my_speaker.set_subwoofer_stereo(False)  # False=mono, True=stereo
+my_speaker.set_subwoofer_stereo(False)  # False=mono, True=stereo (no effect)
+
+# KW1 Wireless Subwoofer Adapter
+# The KW1 is KEF's wireless subwoofer adapter for all W2 platform speakers
+kw1_enabled = my_speaker.get_kw1_enabled()  # Returns bool
+my_speaker.set_kw1_enabled(True)  # Enable KW1 wireless adapter
+
+# Note: KW2 (built-in wireless module in XIO) cannot be controlled via HTTP API.
+# KW2 uses Bluetooth Low Energy pairing which is handled by the KEF Connect app.
 
 # High-pass filter for main speakers (use with subwoofer)
 # Returns (enabled: bool, freq_hz: float)
@@ -318,6 +331,10 @@ await my_speaker.set_subwoofer_preset('kube8b')
 await my_speaker.set_subwoofer_lowpass(80.0)
 enabled, freq = await my_speaker.get_high_pass_filter()
 await my_speaker.set_high_pass_filter(enabled=True, freq_hz=80.0)
+
+# Async examples - KW1 wireless adapter
+kw1_enabled = await my_speaker.get_kw1_enabled()
+await my_speaker.set_kw1_enabled(True)
 ```
 
 ### EQ Profile Management
@@ -444,10 +461,11 @@ for source, volume in sorted(all_volumes.items()):
 ```
 
 **Available input sources by model:**
-- **LSX II**: wifi, bluetooth, optical, coaxial, usb, analogue, tv (7 inputs)
-- **LSX II LT**: wifi, bluetooth, optical, coaxial, usb, tv (6 inputs - no analogue)
-- **XIO Soundbar**: wifi, bluetooth, optical, tv (4 inputs only)
-- **LS50 Wireless II / LS60**: All 7 inputs
+- **LSX II**: wifi, bluetooth, optical, usb, analogue, tv (6 inputs)
+- **LSX II LT**: wifi, bluetooth, optical, usb, tv (5 inputs)
+- **LS50 Wireless II**: wifi, bluetooth, optical, coaxial, analogue, tv (6 inputs)
+- **LS60 Wireless**: wifi, bluetooth, optical, coaxial, analogue, tv (6 inputs)
+- **XIO Soundbar**: wifi, bluetooth, optical, tv (4 inputs)
 
 #### Volume Behavior Settings
 
@@ -471,25 +489,41 @@ speaker.set_volume_settings(limit=75)  # Soft limit at 75%
 speaker.set_volume_settings(max_volume=85, step=2, limit=80)
 ```
 
-#### Global vs Per-Input Volume Mode
+#### Reset Volume (Startup Volume)
 
-Switch between global volume mode (all inputs use same volume) or per-input mode (each input remembers its own volume):
+The "Reset Volume" feature (called "Startup Volume" in some contexts) controls what volume the speaker uses when waking from standby. This matches the KEF Connect app's "Reset volume" setting.
+
+```python
+# Check if reset volume is enabled
+is_enabled = speaker.get_startup_volume_enabled()
+# Returns: True = enabled, False = disabled (resumes at last volume)
+
+# Enable reset volume feature
+speaker.set_startup_volume_enabled(True)
+
+# Disable reset volume (speaker resumes at last volume level)
+speaker.set_startup_volume_enabled(False)
+```
+
+#### All Sources vs Individual Sources Mode
+
+When reset volume is enabled, choose between "All Sources" (global) or "Individual Sources" (per-input) mode:
 
 ```python
 # Check current mode
-is_global_mode = speaker.get_standby_volume_behavior()
-# Returns: True = global mode, False = per-input mode
+is_all_sources = speaker.get_standby_volume_behavior()
+# Returns: True = All Sources, False = Individual Sources
 
-# Enable global volume mode (all inputs use same volume)
+# Set to "All Sources" mode (same reset volume for all inputs)
 speaker.set_standby_volume_behavior(True)
 
-# Enable per-input mode (each input has its own volume)
+# Set to "Individual Sources" mode (different reset volume per input)
 speaker.set_standby_volume_behavior(False)
 ```
 
 **How it works:**
-- **Global mode (True)**: When you switch between inputs, volume stays the same
-- **Per-input mode (False)**: Each input (WiFi, Bluetooth, etc.) remembers its last volume level
+- **All Sources (True)**: All inputs use the same reset volume (set via `defaultVolumeGlobal`)
+- **Individual Sources (False)**: Each input has its own reset volume (WiFi, Bluetooth, etc.)
 
 #### Async Support
 
@@ -512,8 +546,9 @@ async def manage_volumes():
     # Configure volume settings
     await speaker.set_volume_settings(max_volume=80, step=2)
 
-    # Switch to per-input mode
-    await speaker.set_standby_volume_behavior(False)
+    # Enable reset volume with Individual Sources mode
+    await speaker.set_standby_volume_behavior(False)  # Individual Sources
+    await speaker.set_startup_volume_enabled(True)    # Enable reset volume
 
 asyncio.run(manage_volumes())
 ```
@@ -797,30 +832,30 @@ profile = await my_speaker.get_sound_profile()
 await my_speaker.set_sound_profile("movie")
 ```
 
-#### Dialogue Enhancement
+#### Dialogue Enhancement Toggle
 
-Dialogue mode enhances speech clarity independently of the sound profile. This is useful for content with hard-to-hear dialogue without switching to the dialogue sound profile:
+> ⚠️ **Note:** The `dialogueMode` boolean field exists in the KEF API and can be read/written, but **does not appear to have any audible effect** on current firmware (tested on XIO V13120). This is separate from the "dialogue" **sound profile** which works correctly. The `dialogueMode` toggle may be a placeholder for a future feature. For dialogue enhancement, use `set_sound_profile("dialogue")` instead.
+
+The `dialogueMode` toggle was intended to enhance speech clarity independently of the sound profile, but currently has no effect:
 
 ```python
-# Get dialogue enhancement state
+# Get dialogue enhancement state (reads correctly but toggle has no effect)
 enabled = my_speaker.get_dialogue_mode()
 print(f"Dialogue enhancement: {'On' if enabled else 'Off'}")
 
-# Enable dialogue enhancement (works with any sound profile)
+# These API calls succeed but have no audible effect
 my_speaker.set_dialogue_mode(True)
-
-# Disable dialogue enhancement
 my_speaker.set_dialogue_mode(False)
 
-# Example: Enhance dialogue while keeping music profile
-my_speaker.set_sound_profile("music")
-my_speaker.set_dialogue_mode(True)  # Add dialogue boost to music profile
+# For actual dialogue enhancement, use the dialogue sound profile instead:
+my_speaker.set_sound_profile("dialogue")  # This works!
 ```
 
 **Async version:**
 ```python
 enabled = await my_speaker.get_dialogue_mode()
-await my_speaker.set_dialogue_mode(True)
+await my_speaker.set_dialogue_mode(True)  # No audible effect
+await my_speaker.set_sound_profile("dialogue")  # Use this instead
 ```
 
 #### Wall Mount Detection
@@ -989,7 +1024,9 @@ enabled = speaker.get_startup_tone()
 
 #### XIO Soundbar: Control Panel LED Controls
 
-The XIO soundbar has exclusive control panel LED settings (4 controls shown in KEF Connect app under "Do Not Disturb"). These methods only work on XIO models:
+The XIO soundbar has exclusive control panel LED settings (4 controls shown in KEF Connect app under "Do Not Disturb"). The `set_top_panel_*` methods only work on XIO models.
+
+> **Note:** The `get/set_front_led()` methods exist for all models but have no visible effect on any currently tested speakers (LSX II, LSX II LT, XIO). The API field exists in firmware but appears to have no hardware implementation. These methods are kept for completeness in case future models support this feature.
 
 ```python
 # Control panel LED during operation

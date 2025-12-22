@@ -41,10 +41,11 @@ TREBLE_AMOUNT_MIN = 0
 TREBLE_AMOUNT_MAX = 24
 TREBLE_AMOUNT_NEUTRAL = 12  # 0dB
 
-# Balance: L30-C-R30 (0-60, where 30=center)
-BALANCE_MIN = 0
-BALANCE_MAX = 60
-BALANCE_CENTER = 30
+# Balance: v1 API uses 0-60 (30=center), v2 API uses -30 to +30 (0=center)
+# We use v2 API which is more intuitive
+BALANCE_MIN = -30  # Full left
+BALANCE_MAX = 30   # Full right
+BALANCE_CENTER = 0
 
 # High-pass frequency: 50-120Hz in 2.5Hz steps (0-28, where 0=50Hz)
 HIGH_PASS_FREQ_MIN = 0
@@ -356,6 +357,7 @@ class KefConnector:
 
         # Map input source to API path
         source_map = {
+            'global': 'Global',
             'wifi': 'Wifi',
             'bluetooth': 'Bluetooth',
             'optic': 'Optical',
@@ -450,21 +452,21 @@ class KefConnector:
         except:
             pass
 
-        # Get volume step
+        # Get volume step (uses i16_ not i32_)
         try:
             payload = {"path": "settings:/kef/host/volumeStep", "roles": "value"}
             with requests.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status_code == 200:
-                    settings['step'] = response.json()[0]["i32_"]
+                    settings['step'] = response.json()[0]["i16_"]
         except:
             pass
 
-        # Get volume limit
+        # Get volume limit (is bool, not int)
         try:
             payload = {"path": "settings:/kef/host/volumeLimit", "roles": "value"}
             with requests.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status_code == 200:
-                    settings['limit'] = response.json()[0]["i32_"]
+                    settings['limit_enabled'] = response.json()[0]["bool_"]
         except:
             pass
 
@@ -508,18 +510,16 @@ class KefConnector:
             payload = {
                 "path": "settings:/kef/host/volumeStep",
                 "roles": "value",
-                "value": f'{{"type":"i32_","i32_":{step}}}',
+                "value": f'{{"type":"i16_","i16_":{step}}}',
             }
             with requests.get("http://" + self.host + "/api/setData", params=payload) as response:
                 pass
 
         if limit is not None:
-            if not 0 <= limit <= 100:
-                raise ValueError(f"limit must be between 0 and 100, got {limit}")
             payload = {
                 "path": "settings:/kef/host/volumeLimit",
                 "roles": "value",
-                "value": f'{{"type":"i32_","i32_":{limit}}}',
+                "value": f'{{"type":"bool_","bool_":{str(limit).lower()}}}',
             }
             with requests.get("http://" + self.host + "/api/setData", params=payload) as response:
                 pass
@@ -534,7 +534,7 @@ class KefConnector:
             is_global = speaker.get_standby_volume_behavior()
         """
         payload = {
-            "path": "settings:/kef/host/standbyDefaultVol",
+            "path": "settings:/kef/host/advancedStandbyDefaultVol",
             "roles": "value",
         }
 
@@ -543,7 +543,8 @@ class KefConnector:
         ) as response:
             json_output = response.json()
 
-        return json_output[0]["bool_"]
+        # advancedStandbyDefaultVol: false = global, true = per-input
+        return not json_output[0]["bool_"]
 
     def set_standby_volume_behavior(self, use_global):
         """Set standby volume behavior.
@@ -555,10 +556,59 @@ class KefConnector:
             speaker.set_standby_volume_behavior(True)  # Use global volume
             speaker.set_standby_volume_behavior(False)  # Use per-input volumes
         """
+        # advancedStandbyDefaultVol: false = global, true = per-input
+        payload = {
+            "path": "settings:/kef/host/advancedStandbyDefaultVol",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(not use_global).lower()}}}',
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = response.json()
+
+    def get_startup_volume_enabled(self):
+        """Get whether startup volume feature is enabled.
+
+        When enabled, the speaker uses configured startup volumes when waking from standby.
+        When disabled, the speaker resumes at the last volume level.
+
+        Returns:
+            bool: True if startup volume is enabled, False if disabled
+
+        Example:
+            is_enabled = speaker.get_startup_volume_enabled()
+        """
         payload = {
             "path": "settings:/kef/host/standbyDefaultVol",
             "roles": "value",
-            "value": f'{{"type":"bool_","bool_":{str(use_global).lower()}}}',
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+
+        return json_output[0]["bool_"]
+
+    def set_startup_volume_enabled(self, enabled):
+        """Enable or disable the startup volume feature.
+
+        When enabled, the speaker uses configured startup volumes when waking from standby.
+        When disabled, the speaker resumes at the last volume level.
+
+        Args:
+            enabled (bool): True to enable startup volume, False to disable
+
+        Example:
+            speaker.set_startup_volume_enabled(True)   # Enable startup volume
+            speaker.set_startup_volume_enabled(False)  # Disable (resume at last volume)
+        """
+        payload = {
+            "path": "settings:/kef/host/standbyDefaultVol",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
         }
 
         with requests.get(
@@ -843,6 +893,96 @@ class KefConnector:
         ) as response:
             json_output = response.json()
 
+    def get_subwoofer_wake_on_startup(self):
+        """Get wake subwoofer on startup setting.
+
+        When enabled, the speaker will wake the subwoofer when it powers on.
+        This works with wired subwoofers.
+
+        Returns:
+            bool: True if wake subwoofer on startup is enabled
+        """
+        payload = {
+            "path": "settings:/kef/host/subwooferForceOn",
+            "roles": "value",
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+
+        return json_output[0].get("bool_", False)
+
+    def set_subwoofer_wake_on_startup(self, enabled):
+        """Set wake subwoofer on startup.
+
+        When enabled, the speaker will wake the subwoofer when it powers on.
+        This works with wired subwoofers.
+
+        Args:
+            enabled (bool): True to enable wake subwoofer on startup
+
+        Example:
+            speaker.set_subwoofer_wake_on_startup(True)
+        """
+        payload = {
+            "path": "settings:/kef/host/subwooferForceOn",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = response.json()
+
+    def get_kw1_wake_on_startup(self):
+        """Get KW1 wake on startup setting.
+
+        When enabled, the speaker will wake a wireless subwoofer connected
+        via KW1 adapter when it powers on. This is specifically for
+        KC62/KF92 subwoofers with KW1 wireless adapter.
+
+        Returns:
+            bool: True if KW1 wake on startup is enabled
+        """
+        payload = {
+            "path": "settings:/kef/host/subwooferForceOnKW1",
+            "roles": "value",
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+
+        return json_output[0].get("bool_", False)
+
+    def set_kw1_wake_on_startup(self, enabled):
+        """Set KW1 wake on startup.
+
+        When enabled, the speaker will wake a wireless subwoofer connected
+        via KW1 adapter when it powers on. This is specifically for
+        KC62/KF92 subwoofers with KW1 wireless adapter.
+
+        Args:
+            enabled (bool): True to enable KW1 wake on startup
+
+        Example:
+            speaker.set_kw1_wake_on_startup(True)
+        """
+        payload = {
+            "path": "settings:/kef/host/subwooferForceOnKW1",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = response.json()
+
     def get_wake_source(self):
         """Get wake-up source setting.
 
@@ -993,7 +1133,7 @@ class KefConnector:
         ) as response:
             json_output = response.json()
 
-        return json_output[0].get("string_", "left")
+        return json_output[0].get("kefMasterChannelMode", "right")
 
     def set_master_channel(self, channel):
         """Set master channel designation.
@@ -1011,7 +1151,7 @@ class KefConnector:
         payload = {
             "path": "settings:/kef/host/masterChannelMode",
             "roles": "value",
-            "value": f'{{"type":"string_","string_":"{channel}"}}',
+            "value": f'{{"type":"kefMasterChannelMode","kefMasterChannelMode":"{channel}"}}',
         }
 
         with requests.get(
@@ -1044,6 +1184,10 @@ class KefConnector:
     def get_front_led(self):
         """Get front panel LED setting.
 
+        Note: This API setting exists but has no visible effect on any
+        currently tested KEF speakers (LSX II, LSX II LT, XIO). The setting
+        may be reserved for future models or have no hardware implementation.
+
         Returns:
             bool: True if front LED is enabled, False if disabled
 
@@ -1065,6 +1209,10 @@ class KefConnector:
 
     def set_front_led(self, enabled):
         """Set front panel LED.
+
+        Note: This API setting exists but has no visible effect on any
+        currently tested KEF speakers (LSX II, LSX II LT, XIO). The setting
+        may be reserved for future models or have no hardware implementation.
 
         Args:
             enabled (bool): True to enable LED, False to disable
@@ -2270,6 +2418,30 @@ class KefConnector:
 
         return json_output
 
+    def set_request(self, path, roles="value", value=None):
+        """Generic method to set data via any API path.
+
+        Args:
+            path: API path to set (e.g., "firmwareupdate:downloadNewUpdate")
+            roles: API roles parameter (default: "value", use "activate" for actions)
+            value: Optional value to set (can be JSON string or dict)
+
+        Returns:
+            JSON response from API
+        """
+        payload = {
+            "path": path,
+            "roles": roles,
+        }
+        if value is not None:
+            payload["value"] = value
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = response.json()
+
+        return json_output
+
     def get_wifi_information(self):
         """Get WiFi information from speaker.
 
@@ -2949,8 +3121,8 @@ class KefConnector:
         """Set balance position (v2 API).
 
         Args:
-            position (float): Balance position (negative=left, 0=center, positive=right)
-                             Range: approximately -6.0 to +6.0
+            position (int): Balance position (-30=full left, 0=center, +30=full right)
+                           KEF app shows this as 0-60 with 30 as center.
 
         Returns:
             dict: JSON response from speaker
@@ -2960,8 +3132,9 @@ class KefConnector:
         """
         if not isinstance(position, (int, float)):
             raise ValueError(f"position must be a number, got {type(position)}")
-        if not (-6.0 <= position <= 6.0):
-            raise ValueError(f"position must be between -6.0 and +6.0, got {position}")
+        position = int(position)
+        if not (-30 <= position <= 30):
+            raise ValueError(f"position must be between -30 and +30, got {position}")
 
         return self.update_dsp_setting('balance', position)
 
@@ -3275,6 +3448,72 @@ class KefConnector:
             raise ValueError(f"enabled must be a boolean, got {type(enabled)}")
 
         return self.update_dsp_setting('subEnableStereo', enabled)
+
+    # Wireless Subwoofer Adapter Methods (v2 API)
+    def get_kw1_enabled(self):
+        """Get KW1 wireless subwoofer adapter status (v2 API).
+
+        The KW1 is KEF's wireless subwoofer adapter. When enabled, it allows
+        connecting a subwoofer wirelessly instead of via cable.
+
+        Note: XIO supports both KW1 and KW2 adapters simultaneously.
+        Use get_subwoofer_count() to check if KW2 is also enabled (count=2).
+
+        Returns:
+            bool: True if KW1 adapter is enabled, False if disabled
+        """
+        profile = self.get_eq_profile()
+        return profile['kefEqProfileV2']['isKW1']
+
+    def set_kw1_enabled(self, enabled):
+        """Enable or disable KW1 wireless subwoofer adapter (v2 API).
+
+        Args:
+            enabled (bool): True to enable KW1 adapter, False to disable
+
+        Returns:
+            dict: JSON response from speaker
+
+        Raises:
+            ValueError: If enabled is not a boolean
+        """
+        if not isinstance(enabled, bool):
+            raise ValueError(f"enabled must be a boolean, got {type(enabled)}")
+
+        return self.update_dsp_setting('isKW1', enabled)
+
+    def get_subwoofer_count(self):
+        """Get number of subwoofers configured (v2 API).
+
+        On XIO, this controls whether KW2 is enabled:
+        - count=1: Single subwoofer (KW1 or wired)
+        - count=2: Two subwoofers (KW1 + KW2)
+
+        Returns:
+            int: Number of configured subwoofers (1 or 2)
+        """
+        profile = self.get_eq_profile()
+        return profile['kefEqProfileV2']['subwooferCount']
+
+    def set_subwoofer_count(self, count):
+        """Set number of subwoofers (v2 API).
+
+        On XIO, setting count=2 enables the KW2 wireless adapter
+        in addition to KW1 or wired connection.
+
+        Args:
+            count (int): Number of subwoofers (1 or 2)
+
+        Returns:
+            dict: JSON response from speaker
+
+        Raises:
+            ValueError: If count is not 1 or 2
+        """
+        if count not in (1, 2):
+            raise ValueError(f"count must be 1 or 2, got {count}")
+
+        return self.update_dsp_setting('subwooferCount', count)
 
     # High-Pass Filter Methods (v2 API)
     def get_high_pass_filter(self):
@@ -3717,6 +3956,31 @@ class KefAsyncConnector:
 
         return json_output
 
+    async def set_request(self, path, roles="value", value=None):
+        """Generic method to set data via any API path.
+
+        Args:
+            path: API path to set (e.g., "firmwareupdate:install")
+            roles: API roles parameter (default: "value")
+            value: Optional value to send (JSON string)
+
+        Returns:
+            JSON response from API
+        """
+        payload = {
+            "path": path,
+            "roles": roles,
+        }
+        if value is not None:
+            payload["value"] = value
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = await response.json()
+
+        return json_output
+
     async def get_wifi_information(self):
         """Get WiFi information from speaker.
 
@@ -3822,10 +4086,11 @@ class KefAsyncConnector:
         """Set default volume for a specific input source.
 
         Args:
-            input_source (str): Input source name (wifi, bluetooth, optic, coaxial, usb, analog, tv)
+            input_source (str): Input source name (global, wifi, bluetooth, optic, coaxial, usb, analog, tv)
             volume (int): Volume level (0-100)
 
         Example:
+            await speaker.set_default_volume('global', 30)  # Set global startup volume
             await speaker.set_default_volume('wifi', 50)
             await speaker.set_default_volume('bluetooth', 40)
         """
@@ -3834,6 +4099,7 @@ class KefAsyncConnector:
 
         # Map input source to API path
         source_map = {
+            'global': 'Global',
             'wifi': 'Wifi',
             'bluetooth': 'Bluetooth',
             'optic': 'Optical',
@@ -3933,23 +4199,23 @@ class KefAsyncConnector:
         except:
             pass
 
-        # Get volume step
+        # Get volume step (uses i16_ not i32_)
         try:
             payload = {"path": "settings:/kef/host/volumeStep", "roles": "value"}
             async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status == 200:
                     json_output = await response.json()
-                    settings['step'] = json_output[0]["i32_"]
+                    settings['step'] = json_output[0]["i16_"]
         except:
             pass
 
-        # Get volume limit
+        # Get volume limit (is bool, not int)
         try:
             payload = {"path": "settings:/kef/host/volumeLimit", "roles": "value"}
             async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status == 200:
                     json_output = await response.json()
-                    settings['limit'] = json_output[0]["i32_"]
+                    settings['limit_enabled'] = json_output[0]["bool_"]
         except:
             pass
 
@@ -3970,12 +4236,12 @@ class KefAsyncConnector:
 
         Args:
             max_volume (int, optional): Maximum volume (0-100)
-            step (int, optional): Volume increment step
-            limit (int, optional): Volume limiter (0-100)
+            step (int, optional): Volume increment step (1-10)
+            limit (bool, optional): Enable volume limiter
 
         Example:
             await speaker.set_volume_settings(max_volume=80, step=2)
-            await speaker.set_volume_settings(limit=75)
+            await speaker.set_volume_settings(limit=True)
         """
         await self.resurect_session()
 
@@ -3996,18 +4262,16 @@ class KefAsyncConnector:
             payload = {
                 "path": "settings:/kef/host/volumeStep",
                 "roles": "value",
-                "value": f'{{"type":"i32_","i32_":{step}}}',
+                "value": f'{{"type":"i16_","i16_":{step}}}',
             }
             async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
                 pass
 
         if limit is not None:
-            if not 0 <= limit <= 100:
-                raise ValueError(f"limit must be between 0 and 100, got {limit}")
             payload = {
                 "path": "settings:/kef/host/volumeLimit",
                 "roles": "value",
-                "value": f'{{"type":"i32_","i32_":{limit}}}',
+                "value": f'{{"type":"bool_","bool_":{str(limit).lower()}}}',
             }
             async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
                 pass
@@ -4016,10 +4280,59 @@ class KefAsyncConnector:
         """Get standby volume behavior setting.
 
         Returns:
-            bool: True if using global volume mode, False if using per-input mode
+            bool: True if using global volume mode (All sources), False if using per-input mode (Individual sources)
 
         Example:
             is_global = await speaker.get_standby_volume_behavior()
+        """
+        payload = {
+            "path": "settings:/kef/host/advancedStandbyDefaultVol",
+            "roles": "value",
+        }
+
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = await response.json()
+
+        # advancedStandbyDefaultVol: false = global (All sources), true = per-input (Individual sources)
+        return not json_output[0]["bool_"]
+
+    async def set_standby_volume_behavior(self, use_global):
+        """Set standby volume behavior.
+
+        Args:
+            use_global (bool): True for global volume mode (All sources), False for per-input mode (Individual sources)
+
+        Example:
+            await speaker.set_standby_volume_behavior(True)  # All sources
+            await speaker.set_standby_volume_behavior(False)  # Individual sources
+        """
+        # advancedStandbyDefaultVol: false = global (All sources), true = per-input (Individual sources)
+        payload = {
+            "path": "settings:/kef/host/advancedStandbyDefaultVol",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(not use_global).lower()}}}',
+        }
+
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = await response.json()
+
+    async def get_startup_volume_enabled(self):
+        """Get whether reset volume feature is enabled.
+
+        When enabled, the speaker uses configured reset volumes when waking from standby.
+        When disabled, the speaker resumes at the last volume level.
+
+        Returns:
+            bool: True if reset volume is enabled, False if disabled
+
+        Example:
+            is_enabled = await speaker.get_startup_volume_enabled()
         """
         payload = {
             "path": "settings:/kef/host/standbyDefaultVol",
@@ -4034,20 +4347,23 @@ class KefAsyncConnector:
 
         return json_output[0]["bool_"]
 
-    async def set_standby_volume_behavior(self, use_global):
-        """Set standby volume behavior.
+    async def set_startup_volume_enabled(self, enabled):
+        """Enable or disable the reset volume feature.
+
+        When enabled, the speaker uses configured reset volumes when waking from standby.
+        When disabled, the speaker resumes at the last volume level.
 
         Args:
-            use_global (bool): True for global volume mode, False for per-input mode
+            enabled (bool): True to enable reset volume, False to disable
 
         Example:
-            await speaker.set_standby_volume_behavior(True)  # Use global volume
-            await speaker.set_standby_volume_behavior(False)  # Use per-input volumes
+            await speaker.set_startup_volume_enabled(True)   # Enable reset volume
+            await speaker.set_startup_volume_enabled(False)  # Disable (resume at last volume)
         """
         payload = {
             "path": "settings:/kef/host/standbyDefaultVol",
             "roles": "value",
-            "value": f'{{"type":"bool_","bool_":{str(use_global).lower()}}}',
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
         }
 
         await self.resurect_session()
@@ -4270,6 +4586,74 @@ class KefAsyncConnector:
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
             json_output = await response.json()
 
+    async def get_subwoofer_wake_on_startup(self):
+        """Get wake subwoofer on startup setting.
+
+        When enabled, the speaker will wake the subwoofer when it powers on.
+        This works with wired subwoofers.
+
+        Returns:
+            bool: True if wake subwoofer on startup is enabled
+        """
+        payload = {"path": "settings:/kef/host/subwooferForceOn", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            json_output = await response.json()
+        return json_output[0].get("bool_", False)
+
+    async def set_subwoofer_wake_on_startup(self, enabled):
+        """Set wake subwoofer on startup.
+
+        When enabled, the speaker will wake the subwoofer when it powers on.
+        This works with wired subwoofers.
+
+        Args:
+            enabled (bool): True to enable wake subwoofer on startup
+        """
+        payload = {
+            "path": "settings:/kef/host/subwooferForceOn",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            json_output = await response.json()
+
+    async def get_kw1_wake_on_startup(self):
+        """Get KW1 wake on startup setting.
+
+        When enabled, the speaker will wake a wireless subwoofer connected
+        via KW1 adapter when it powers on. This is specifically for
+        KC62/KF92 subwoofers with KW1 wireless adapter.
+
+        Returns:
+            bool: True if KW1 wake on startup is enabled
+        """
+        payload = {"path": "settings:/kef/host/subwooferForceOnKW1", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            json_output = await response.json()
+        return json_output[0].get("bool_", False)
+
+    async def set_kw1_wake_on_startup(self, enabled):
+        """Set KW1 wake on startup.
+
+        When enabled, the speaker will wake a wireless subwoofer connected
+        via KW1 adapter when it powers on. This is specifically for
+        KC62/KF92 subwoofers with KW1 wireless adapter.
+
+        Args:
+            enabled (bool): True to enable KW1 wake on startup
+        """
+        payload = {
+            "path": "settings:/kef/host/subwooferForceOnKW1",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            json_output = await response.json()
+
     async def get_wake_source(self):
         """Get wake-up source setting."""
         payload = {"path": "settings:/kef/host/wakeUpSource", "roles": "value"}
@@ -4339,7 +4723,7 @@ class KefAsyncConnector:
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
             json_output = await response.json()
-        return json_output[0].get("string_", "left")
+        return json_output[0].get("kefMasterChannelMode", "right")
 
     async def set_master_channel(self, channel):
         """Set master channel designation."""
@@ -4349,7 +4733,7 @@ class KefAsyncConnector:
         payload = {
             "path": "settings:/kef/host/masterChannelMode",
             "roles": "value",
-            "value": f'{{"type":"string_","string_":"{channel}"}}',
+            "value": f'{{"type":"kefMasterChannelMode","kefMasterChannelMode":"{channel}"}}',
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
@@ -4365,7 +4749,11 @@ class KefAsyncConnector:
 
     # Async LED Control Methods (Phase 6)
     async def get_front_led(self):
-        """Get front panel LED setting."""
+        """Get front panel LED setting.
+
+        Note: This API setting exists but has no visible effect on any
+        currently tested KEF speakers (LSX II, LSX II LT, XIO).
+        """
         payload = {"path": "settings:/kef/host/disableFrontLED", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
@@ -4373,7 +4761,11 @@ class KefAsyncConnector:
         return not json_output[0].get("bool_", False)
 
     async def set_front_led(self, enabled):
-        """Set front panel LED."""
+        """Set front panel LED.
+
+        Note: This API setting exists but has no visible effect on any
+        currently tested KEF speakers (LSX II, LSX II LT, XIO).
+        """
         disabled = not enabled
         payload = {
             "path": "settings:/kef/host/disableFrontLED",
@@ -5847,8 +6239,8 @@ class KefAsyncConnector:
         """Set balance position (v2 API).
 
         Args:
-            position (float): Balance position (negative=left, 0=center, positive=right)
-                             Range: approximately -6.0 to +6.0
+            position (int): Balance position (-30=full left, 0=center, +30=full right)
+                           KEF app shows this as 0-60 with 30 as center.
 
         Returns:
             dict: JSON response from speaker
@@ -5858,8 +6250,9 @@ class KefAsyncConnector:
         """
         if not isinstance(position, (int, float)):
             raise ValueError(f"position must be a number, got {type(position)}")
-        if not (-6.0 <= position <= 6.0):
-            raise ValueError(f"position must be between -6.0 and +6.0, got {position}")
+        position = int(position)
+        if not (-30 <= position <= 30):
+            raise ValueError(f"position must be between -30 and +30, got {position}")
 
         return await self.update_dsp_setting('balance', position)
 
@@ -6218,6 +6611,72 @@ class KefAsyncConnector:
 
         return await self.update_dsp_setting('subEnableStereo', enabled)
 
+    # Wireless Subwoofer Adapter Methods (v2 API)
+    async def get_kw1_enabled(self):
+        """Get KW1 wireless subwoofer adapter status (v2 API).
+
+        The KW1 is KEF's wireless subwoofer adapter. When enabled, it allows
+        connecting a subwoofer wirelessly instead of via cable.
+
+        Note: XIO supports both KW1 and KW2 adapters simultaneously.
+        Use get_subwoofer_count() to check if KW2 is also enabled (count=2).
+
+        Returns:
+            bool: True if KW1 adapter is enabled, False if disabled
+        """
+        profile = await self.get_eq_profile()
+        return profile['kefEqProfileV2']['isKW1']
+
+    async def set_kw1_enabled(self, enabled):
+        """Enable or disable KW1 wireless subwoofer adapter (v2 API).
+
+        Args:
+            enabled (bool): True to enable KW1 adapter, False to disable
+
+        Returns:
+            dict: JSON response from speaker
+
+        Raises:
+            ValueError: If enabled is not a boolean
+        """
+        if not isinstance(enabled, bool):
+            raise ValueError(f"enabled must be a boolean, got {type(enabled)}")
+
+        return await self.update_dsp_setting('isKW1', enabled)
+
+    async def get_subwoofer_count(self):
+        """Get number of subwoofers configured (v2 API).
+
+        On XIO, this controls whether KW2 is enabled:
+        - count=1: Single subwoofer (KW1 or wired)
+        - count=2: Two subwoofers (KW1 + KW2)
+
+        Returns:
+            int: Number of configured subwoofers (1 or 2)
+        """
+        profile = await self.get_eq_profile()
+        return profile['kefEqProfileV2']['subwooferCount']
+
+    async def set_subwoofer_count(self, count):
+        """Set number of subwoofers (v2 API).
+
+        On XIO, setting count=2 enables the KW2 wireless adapter
+        in addition to KW1 or wired connection.
+
+        Args:
+            count (int): Number of subwoofers (1 or 2)
+
+        Returns:
+            dict: JSON response from speaker
+
+        Raises:
+            ValueError: If count is not 1 or 2
+        """
+        if count not in (1, 2):
+            raise ValueError(f"count must be 1 or 2, got {count}")
+
+        return await self.update_dsp_setting('subwooferCount', count)
+
     # High-Pass Filter Methods (v2 API)
     async def get_high_pass_filter(self):
         """Get high-pass filter settings (v2 API).
@@ -6302,8 +6761,12 @@ class KefAsyncConnector:
             >>> print(result)
         """
         try:
-            # Try using activate role to trigger check
-            result = await self.get_request("firmwareupdate:checkForUpdate", roles="activate")
+            # Use setData with activate role to trigger check
+            result = await self.set_request(
+                "firmwareupdate:checkForUpdate",
+                roles="activate",
+                value='{"type":"bool_","bool_":true}'
+            )
             return result[0] if result else None
         except Exception:
             # Fallback to value role
@@ -6355,13 +6818,21 @@ class KefAsyncConnector:
             ...     print("Update started!")
         """
         try:
-            # Try firmwareupdate:install endpoint first
-            result = await self.get_request("firmwareupdate:install", roles="activate")
+            # Use setData with activate role and boolean value - try firmwareupdate:install first
+            result = await self.set_request(
+                "firmwareupdate:install",
+                roles="activate",
+                value='{"type":"bool_","bool_":true}'
+            )
             return result[0] if result else None
         except Exception:
             # Fallback to firmwareupdate:update endpoint
             try:
-                result = await self.get_request("firmwareupdate:update", roles="activate")
+                result = await self.set_request(
+                    "firmwareupdate:update",
+                    roles="activate",
+                    value='{"type":"bool_","bool_":true}'
+                )
                 return result[0] if result else None
             except Exception:
                 return None
