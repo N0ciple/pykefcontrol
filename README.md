@@ -1,5 +1,6 @@
-# 🔉 pykefcontrol 
-Python library for controlling KEF speakers : LS50WII, LSX II and LS60
+# 🔉 pykefcontrol
+
+Python library for controlling KEF speakers: LS50WII, LSX II and LS60
 
 ⚠️ **Read the changelog to see breaking changes.**
 For the **async** version, please read [this section](#️-specificity-of-kefasyncconnector)
@@ -7,20 +8,20 @@ For the **async** version, please read [this section](#️-specificity-of-kefasy
 🏠️ **For the Home Assistant integration, please see [hass-kef-connector](https://github.com/N0ciple/hass-kef-connector)**
 
 - [🔉 pykefcontrol](#-pykefcontrol)
-  - [📄 General Informations](#-general-informations)
+  - [📄 General Information](#-general-information)
   - [⬇️ Installation](#️-installation)
   - [⚙️ Usage](#️-usage)
-    - [👨‍💻 Get the IP address](#-get-the-ip-address)
-    - [🎚️ Control the speaker with pykefcontrol](#️-control-the-speaker-with-pykefcontrol)
+    - [Get the IP address](#get-the-ip-address)
+    - [Control the speaker with pykefcontrol](#control-the-speaker-with-pykefcontrol)
       - [First Step](#first-step)
       - [Available features](#available-features)
       - [Advanced features](#advanced-features)
-  - [🕵️ Specificity of `KefAsyncConnector`](#️-specificity-of-kefasyncconnector)
+  - [🕵️ Specificity of KefAsyncConnector](#️-specificity-of-kefasyncconnector)
     - [Renaming of property setters](#renaming-of-property-setters)
   - [📜 Changelog](#-changelog)
-  
 
-## 📄 General Informations
+
+## 📄 General Information
 This library works with the KEF LS50 Wireless II, LSX II and LS60 only. If you are searching for a library for the first generation LS50W or LSX, you can use [aiokef](https://github.com/basnijholt/aiokef).
 Pykefcontrol has 2 main components: `KefConnector` and `KefAsyncConnector`. The first one can be used in all classic scripts and python programs, whereas the second one (`KefAsyncConnector`) can be used in asynchronous programs.
 
@@ -63,44 +64,53 @@ All KEF W2 platform speakers with network connectivity (WiFi/Ethernet) are suppo
 
 See **[apk_analysis.md](apk_analysis.md)** for complete API documentation and implementation roadmap.
 
-## ⬇️ Installation 
-To install pykefcontrol, you can use pip : 
+## ⬇️ Installation
+
+To install pykefcontrol, you can use pip:
+
 ```shell
 pip install pykefcontrol
 ```
 
 You can make sure you have the latest version by typing:
-`>>> print(pykefcontrol.__version__)`
+```python
+>>> print(pykefcontrol.__version__)
+```
 
 Currently, the latest version is version `0.8`
 
 ## ⚙️ Usage
 
-### 👨‍💻 Get the IP address
-To use the pykefcontrol library, you need to know the IP address of your speakers. To do so, you can have a look at your router web page, or check in the KEF Connect app by doing the following :
- 1. Launch the KEF Connect app
- 2. Tap the gear icon on the bottom right
- 3. Then your speaker name (It should be right below your profile information)
- 4. Finally, the little circled "i" next to your speaker name in the _My Speakers_ section
- 5. You should find your IP address in the "IP address" section under the form `www.xxx.yyy.zzz`, where `www`, `xxx`, `yyy` and `zzz` are integers between `0` and `255`.
+### Get the IP address
 
-### 🎚️ Control the speaker with pykefcontrol
-Once pykefcontrol is installed and you have your KEF Speaker IP address, you can use pykefcontrol in the following way :
+To use the pykefcontrol library, you need to know the IP address of your speakers. To do so, you can have a look at your router web page, or check in the KEF Connect app by doing the following:
+
+1. Launch the KEF Connect app
+2. Tap the gear icon on the bottom right
+3. Then your speaker name (It should be right below your profile information)
+4. Finally, the little circled "i" next to your speaker name in the _My Speakers_ section
+5. You should find your IP address in the "IP address" section under the form `www.xxx.yyy.zzz`, where `www`, `xxx`, `yyy` and `zzz` are integers between `0` and `255`.
+
+### Control the speaker with pykefcontrol
+
+Once pykefcontrol is installed and you have your KEF Speaker IP address, you can use pykefcontrol in the following way:
 
 #### First Step
 
-☝️ _For the **async** version, please read the section_ [🕵️ Specificity of `KefAsyncConnector`](#️-specificity-of-kefasyncconnector).
+⚠️ _For the **async** version, please read the section [Specificity of KefAsyncConnector](#️-specificity-of-kefasyncconnector)._
 
-First, import the class and create a `KefConnector` object :
+First, import the class and create a `KefConnector` object:
+
 ```python
 from pykefcontrol.kef_connector import KefConnector
 my_speaker = KefConnector("www.xxx.yyy.zzz")
 ```
+
 ⚠️ Do not forget to replace `www.xxx.yyy.zzz` with your speaker IP address. You should give your IP address as a string. It's to say that you should leave the quotation marks `"` around the IP address
 
 #### Available features
 
-Once the `my_speaker` object is created, you can use it in the following ways :
+Once the `my_speaker` object is created, you can use it in the following ways:
 
 **Power, Shutdown and Status**
 ```python
@@ -1583,18 +1593,19 @@ for network in networks:
 
 **Use case:** Network diagnostics, finding optimal WiFi channel, checking signal strength before placement.
 
-**Information polling**
+**Information Polling**
 
 Pykefcontrol offers a polling functionality. Instead of manually fetching all parameters to see what has changed, you can use the method `poll_speaker`. This method returns the updated properties since the last time the changes were polled. If multiple changes are made to the same property, only the last change will be kept. It is technically possible to track all the changes to a property since the last poll, although it is not implemented. Please submit an issue if you need such a feature.
+
 `poll_speaker` will return a dictionary whose keys are the names of the properties which have been updated.
 
 `poll_speaker` arguments:
 
-| argument      | required   | default value | comment |
-| ------------- | ---------- | ------------- | ------- |
-| `timeout`     | *Optional* | `10`          |  `timeout` is in seconds. If no change has been made since the last poll when you call `poll_speaker`, the method will wait for changes during `timeout` seconds for new changes. If there is a change before the end of the timeout, `poll_speaker` will return them immediately and stop monitoring changes. If no changes are made, the method will return an empty dictionary.  ⚠️ the real timeout is `timeout`+ 0.5 seconds. The speaker will wait for `timeout` seconds before returning an empty dictionary if no changes are made. Therefore it is necessary to add a small margin in the python function to account for processing/networking time. Please submit an issue if you feel that this parameter needs tweaking. |
-| `song_status` | *Optional* | `False`    | **Deprecated**, please use `poll_song_status` instead |
-| `poll_song_status` | *Optional* | `False` |if `poll_song_status` if set to `True`, it will poll the song status (how many miliseconds of the current song have been played so far). If a song is playing and `poll_song_status` is set to `True`, `poll_speaker` will return almost imediately since `song_status` is updated at each second. This is forcing you to poll agressively to get other events. By default it is set to `False` in order to track other events more efficiently. |
+| Argument | Required | Default Value | Comment |
+|----------|----------|---------------|---------|
+| `timeout` | Optional | `10` | `timeout` is in seconds. If no change has been made since the last poll when you call `poll_speaker`, the method will wait for changes during `timeout` seconds for new changes. If there is a change before the end of the timeout, `poll_speaker` will return them immediately and stop monitoring changes. If no changes are made, the method will return an empty dictionary. ⚠️ the real timeout is `timeout`+ 0.5 seconds. The speaker will wait for `timeout` seconds before returning an empty dictionary if no changes are made. Therefore it is necessary to add a small margin in the python function to account for processing/networking time. Please submit an issue if you feel that this parameter needs tweaking. |
+| `song_status` | Optional | `False` | **Deprecated**, please use `poll_song_status` instead |
+| `poll_song_status` | Optional | `False` | If `poll_song_status` if set to `True`, it will poll the song status (how many miliseconds of the current song have been played so far). If a song is playing and `poll_song_status` is set to `True`, `poll_speaker` will return almost imediately since `song_status` is updated at each second. This is forcing you to poll agressively to get other events. By default it is set to `False` in order to track other events more efficiently. |
 
 ```python
 my_speaker.poll_speaker(timeout=3) # example of a 3 seconds timeout
@@ -1625,11 +1636,13 @@ my_speaker.poll_speaker()
 # (output example) >>> {'volume': 32}
 ```
 All the possible keys of the dictionary are:
- `source`, `song_status`, `volume`, `song_info`, `song_length`, `status`, `speaker_status`, `device_name`, `mute` and `other`.
-`other` contains some of the speaker-specific information that might have changed, but are not properties of either `KefConnector` or `KefAsyncConnector`. 
+`source`, `song_status`, `volume`, `song_info`, `song_length`, `status`, `speaker_status`, `device_name`, `mute` and `other`.
+
+`other` contains some of the speaker-specific information that might have changed, but are not properties of either `KefConnector` or `KefAsyncConnector`.
 
 #### Advanced features
-This function is used internally by pykefcontrol and returns a JSON output with a lot of information. You might want to use them to get extra information such as the artwork/album cover URL, which does not have a dedicated function _yet_ in pykefcontrol.
+
+This function is used internally by pykefcontrol and returns a JSON output with a lot of information. You might want to use them to get extra information such as the artwork/album cover URL, which does not have a dedicated function yet in pykefcontrol.
 
 ```python
 # Get currently playing media information
@@ -1638,11 +1651,11 @@ my_speaker._get_player_data()
 
 ```
 
-## 🕵️ Specificity of `KefAsyncConnector`
+## 🕵️ Specificity of KefAsyncConnector
 
 Pykefcontrol offers an **asynchronous connector** with the same feature set as the synchronous connector. However, there are a few changes in the property setters. You can no longer use `my_speaker.volume = 28` to set a property. You have to use the setter like so: `await my_speaker.set_volume(28)`.
 
-The actions you make with `KefAsyncConnector` should be embedded in an async function. Here is a quick example :
+The actions you make with `KefAsyncConnector` should be embedded in an async function. Here is a quick example:
 
 ```python
 import asyncio
@@ -1681,13 +1694,14 @@ loop = asyncio.get_event_loop()
 loop.run_until_complete(main())
 ```
 ### Renaming of property setters
+
 `KefAsyncConnector` has the same property and methods as its synchronous counterpart `KefConnector`. You can access the same properties and methods in an asynchronous context by using `await my_speaker.property` or `await my_speaker.method()`. For the list of available properties and methods, read [Available features](#available-features).
 
-**However**, to have an asynchronous property setter, the way to set properties has changed. You should use the specific setter. For a `property`, the setter is called `set_property`. As you can see in the example script above, to set the volume, use `set_volume`. Here is the list of properties with such setters : 
+**However**, to have an asynchronous property setter, the way to set properties has changed. You should use the specific setter. For a `property`, the setter is called `set_property`. As you can see in the example script above, to set the volume, use `set_volume`. Here is the list of properties with such setters:
 
-- volume : use `set_volume`
-- state : use `set_state`
-- source : use `set_source`
+- volume: use `set_volume`
+- state: use `set_state`
+- source: use `set_source`
 
 ## 🧪 Testing
 
@@ -1967,6 +1981,10 @@ python apk_analysis.py --host YOUR_SPEAKER_IP --verbose
 ```
 
 The analysis achieved 98% feature parity with the KEF Connect app.
+
+## 📖 Developer Documentation
+
+For detailed technical documentation, architecture notes, and AI assistant context, see **[CLAUDE.md](CLAUDE.md)**.
 
 ---
 
