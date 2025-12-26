@@ -1684,10 +1684,13 @@ class KefConnector:
             json_output = response.json()
 
         # Parse the calibration status structure
+        # API returns nested structure: [{"type":"kefDspCalibrationStatus","kefDspCalibrationStatus":{...}}]
         if isinstance(json_output, dict) and 'error' in json_output:
             return None
         if json_output and len(json_output) > 0:
-            status_data = json_output[0]
+            status_data = json_output[0].get('kefDspCalibrationStatus', {})
+            if not status_data:
+                return None
             return {
                 'isCalibrated': status_data.get('isCalibrated', False),
                 'year': status_data.get('year', 0),
@@ -1701,7 +1704,7 @@ class KefConnector:
         """Get room calibration dB adjustment result (XIO soundbar only).
 
         Returns:
-            int: dB adjustment applied by calibration, or None if not available (non-XIO speakers)
+            float: dB adjustment applied by calibration (typically negative), or None if not available (non-XIO speakers)
 
         Example:
             result = speaker.get_calibration_result()  # XIO only
@@ -1721,7 +1724,8 @@ class KefConnector:
             if isinstance(json_output, dict) and 'error' in json_output:
                 return None
             if json_output and len(json_output) > 0:
-                    return json_output[0].get("i32_", 0)
+                # API returns double_ type, not i32_
+                return json_output[0].get("double_", None)
             return None
 
     def get_calibration_step(self):
@@ -3091,18 +3095,21 @@ class KefConnector:
         """Set treble amount (v2 API).
 
         Args:
-            db_value (float): Treble amount in dB (-3.0 to +3.0)
+            db_value (float): Treble amount in dB (-3.0 to +3.0 in 0.25 dB steps)
 
         Returns:
             dict: JSON response from speaker
 
         Raises:
-            ValueError: If db_value is invalid
+            ValueError: If db_value is invalid or not a multiple of 0.25
         """
         if not isinstance(db_value, (int, float)):
             raise ValueError(f"db_value must be a number, got {type(db_value)}")
         if not (-3.0 <= db_value <= 3.0):
             raise ValueError(f"db_value must be between -3.0 and +3.0, got {db_value}")
+        # Validate 0.25 dB step size (KEF Connect app uses 0.25 increments)
+        if round(db_value / 0.25) != db_value / 0.25:
+            raise ValueError(f"db_value must be a multiple of 0.25 dB, got {db_value}")
 
         return self.update_dsp_setting('trebleAmount', db_value)
 
@@ -3314,7 +3321,7 @@ class KefConnector:
         """Get subwoofer gain (v2 API).
 
         Returns:
-            float: Subwoofer gain in dB (-10.0 to +10.0)
+            int: Subwoofer gain in dB (-10 to +10)
         """
         profile = self.get_eq_profile()
         return profile['kefEqProfileV2']['subwooferGain']
@@ -3323,20 +3330,22 @@ class KefConnector:
         """Set subwoofer gain (v2 API).
 
         Args:
-            db_value (float): Subwoofer gain in dB (-10.0 to +10.0)
+            db_value (int): Subwoofer gain in dB (-10 to +10, integer steps only)
 
         Returns:
             dict: JSON response from speaker
 
         Raises:
-            ValueError: If db_value is invalid
+            ValueError: If db_value is invalid or not an integer
         """
         if not isinstance(db_value, (int, float)):
             raise ValueError(f"db_value must be a number, got {type(db_value)}")
-        if not (-10.0 <= db_value <= 10.0):
-            raise ValueError(f"db_value must be between -10.0 and +10.0, got {db_value}")
+        if not (-10 <= db_value <= 10):
+            raise ValueError(f"db_value must be between -10 and +10, got {db_value}")
+        if db_value != int(db_value):
+            raise ValueError(f"db_value must be an integer (no decimal places), got {db_value}")
 
-        return self.update_dsp_setting('subwooferGain', db_value)
+        return self.update_dsp_setting('subwooferGain', int(db_value))
 
     def get_subwoofer_polarity(self):
         """Get subwoofer polarity (v2 API).
@@ -5101,8 +5110,11 @@ class KefAsyncConnector:
             json_output = await response.json()
 
         # Parse the calibration status structure
+        # API returns nested structure: [{"type":"kefDspCalibrationStatus","kefDspCalibrationStatus":{...}}]
         if json_output and len(json_output) > 0:
-            status_data = json_output[0]
+            status_data = json_output[0].get('kefDspCalibrationStatus', {})
+            if not status_data:
+                return None
             return {
                 'isCalibrated': status_data.get('isCalibrated', False),
                 'year': status_data.get('year', 0),
@@ -5116,7 +5128,7 @@ class KefAsyncConnector:
         """Get room calibration dB adjustment result (XIO soundbar only).
 
         Returns:
-            int: dB adjustment applied by calibration, or None if not available (non-XIO speakers)
+            float: dB adjustment applied by calibration (typically negative), or None if not available (non-XIO speakers)
 
         Example:
             result = await speaker.get_calibration_result()  # XIO only
@@ -5131,7 +5143,8 @@ class KefAsyncConnector:
             if isinstance(json_output, dict) and 'error' in json_output:
                 return None
             if json_output and len(json_output) > 0:
-                return json_output[0].get("i32_", 0)
+                # API returns double_ type, not i32_
+                return json_output[0].get("double_", None)
         return None
 
     async def get_calibration_step(self):
@@ -6209,18 +6222,21 @@ class KefAsyncConnector:
         """Set treble amount (v2 API).
 
         Args:
-            db_value (float): Treble amount in dB (-3.0 to +3.0)
+            db_value (float): Treble amount in dB (-3.0 to +3.0 in 0.25 dB steps)
 
         Returns:
             dict: JSON response from speaker
 
         Raises:
-            ValueError: If db_value is invalid
+            ValueError: If db_value is invalid or not a multiple of 0.25
         """
         if not isinstance(db_value, (int, float)):
             raise ValueError(f"db_value must be a number, got {type(db_value)}")
         if not (-3.0 <= db_value <= 3.0):
             raise ValueError(f"db_value must be between -3.0 and +3.0, got {db_value}")
+        # Validate 0.25 dB step size (KEF Connect app uses 0.25 increments)
+        if round(db_value / 0.25) != db_value / 0.25:
+            raise ValueError(f"db_value must be a multiple of 0.25 dB, got {db_value}")
 
         return await self.update_dsp_setting('trebleAmount', db_value)
 
@@ -6476,7 +6492,7 @@ class KefAsyncConnector:
         """Get subwoofer gain (v2 API).
 
         Returns:
-            float: Subwoofer gain in dB (-10.0 to +10.0)
+            int: Subwoofer gain in dB (-10 to +10)
         """
         profile = await self.get_eq_profile()
         return profile['kefEqProfileV2']['subwooferGain']
@@ -6485,20 +6501,22 @@ class KefAsyncConnector:
         """Set subwoofer gain (v2 API).
 
         Args:
-            db_value (float): Subwoofer gain in dB (-10.0 to +10.0)
+            db_value (int): Subwoofer gain in dB (-10 to +10, integer steps only)
 
         Returns:
             dict: JSON response from speaker
 
         Raises:
-            ValueError: If db_value is invalid
+            ValueError: If db_value is invalid or not an integer
         """
         if not isinstance(db_value, (int, float)):
             raise ValueError(f"db_value must be a number, got {type(db_value)}")
-        if not (-10.0 <= db_value <= 10.0):
-            raise ValueError(f"db_value must be between -10.0 and +10.0, got {db_value}")
+        if not (-10 <= db_value <= 10):
+            raise ValueError(f"db_value must be between -10 and +10, got {db_value}")
+        if db_value != int(db_value):
+            raise ValueError(f"db_value must be an integer (no decimal places), got {db_value}")
 
-        return await self.update_dsp_setting('subwooferGain', db_value)
+        return await self.update_dsp_setting('subwooferGain', int(db_value))
 
     async def get_subwoofer_polarity(self):
         """Get subwoofer polarity (v2 API).

@@ -132,7 +132,4 @@ dmypy.json
 .vscode/
 
 # APK decompilation working directories
-kef_apk_decompiled/
-kef_apk_extracted/
-*.xapk
-*.apk
+apk/

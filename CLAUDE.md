@@ -488,6 +488,48 @@ See [apk_analysis.md](apk_analysis.md) for complete API documentation and featur
 - **hass-kef-connector:** Home Assistant integration using this library
 - **aiokef:** Library for KEF Gen 1 speakers (LS50W, LSX Gen 1)
 
+## Recent Bug Fixes (2025-12-25)
+
+### XIO Calibration Parsing
+**Issue:** Calibration status showed "Not calibrated" when speaker was calibrated, and adjustment dB showed 0 instead of actual value.
+
+**Root Cause:** API returns nested structure `{"kefDspCalibrationStatus": {...}}` but code was parsing flat structure. Adjustment uses `double_` type, not `i32_`.
+
+**Fix:** Updated both sync and async methods:
+- `get_calibration_status()`: Lines 1686-1701, 5107-5120
+- `get_calibration_result()`: Lines 1703-1729, 5122-5143
+
+**Status:** ✅ Fixed - XIO now shows correct calibration status and -5 dB adjustment
+
+### Subwoofer Gain Step Size
+**Issue:** UI allowed 0.5 dB steps (e.g., 5.5 dB) but KEF API only accepts integers.
+
+**Fix:** Added validation to enforce 1 dB integer steps (-10 to +10):
+- `set_subwoofer_gain()`: Lines 3326-3345, 6494-6513
+
+**Status:** ✅ Fixed - Now rejects non-integer values with clear error message
+
+### Treble Step Size
+**Issue:** UI allowed any float value but KEF Connect app uses 0.25 dB increments.
+
+**Fix:** Added validation to enforce 0.25 dB steps (-3.0 to +3.0):
+- `set_treble_amount()`: Lines 3094-3114, 6221-6241
+
+**Status:** ✅ Fixed - Now only accepts valid 0.25 dB increments (e.g., 1.25, 1.5, 1.75)
+
+### API Response Format Documentation
+All fixes based on actual API testing of XIO soundbar (V13120):
+```json
+// Calibration Status (nested object)
+[{"type":"kefDspCalibrationStatus","kefDspCalibrationStatus":{"isCalibrated":true,...}}]
+
+// Calibration Result (double, not int)
+[{"type":"double_","double_":-5}]
+
+// EQ Profile (integers for gain, floats for others)
+{"subwooferGain":6,"trebleAmount":1.5,"subOutLPFreq":52.5}
+```
+
 ## Contributors
 
 - **Robin Dupont** - Original author

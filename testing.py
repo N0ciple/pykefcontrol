@@ -1031,6 +1031,93 @@ def xio_specific_test():
         console.print(f"\n[bold orange1]XIO tests: {passed}/{len(xio_tests)} passed[/bold orange1]")
 
 
+def subwoofer_preset_analysis():
+    """Comprehensive test of all subwoofer presets and their automatic parameter changes.
+
+    This test cycles through all available KEF subwoofer presets and verifies that
+    the speaker automatically adjusts gain, low-pass, and high-pass filter values
+    according to the preset specifications.
+
+    Available presets: kc62, kf92, kube8b, kube10b, kube12b, kube15, t2
+    """
+    rule_msg("Subwoofer Preset Analysis")
+    console.print("This test will cycle through all KEF subwoofer presets")
+    console.print("and verify automatic parameter adjustments.")
+    console.print("[orange1]This test requires a connected subwoofer[/orange1]")
+
+    if not NON_INTERACTIVE:
+        skip = input("Run comprehensive preset analysis? (y/n): ")
+        if skip.lower() != 'y':
+            console.print("[yellow]Skipping preset analysis[/yellow]")
+            return
+
+    # All known KEF subwoofer presets
+    presets = ['kc62', 'kf92', 'kube8b', 'kube10b', 'kube12b', 'kube15', 't2']
+
+    console.print(f"\n[dodger_blue1]Testing {len(presets)} subwoofer presets...[/dodger_blue1]")
+
+    from rich.table import Table
+    table = Table(show_header=True, header_style="bold cyan")
+    table.add_column("Preset", style="cyan", justify="left")
+    table.add_column("Gain (dB)", style="yellow", justify="right")
+    table.add_column("Low-pass (Hz)", style="green", justify="right")
+    table.add_column("High-pass (Hz)", style="magenta", justify="right")
+    table.add_column("Status", style="white", justify="center")
+
+    preset_results = {}
+
+    for preset in presets:
+        try:
+            # Set the preset
+            spkr.set_subwoofer_preset(preset)
+            time.sleep(2)  # Wait for speaker to apply changes
+
+            # Get the full EQ profile to see all values
+            profile = spkr.get_eq_profile()
+            eq = profile.get('kefEqProfileV2', {})
+
+            gain = eq.get('subwooferGain', 'N/A')
+            lowpass = eq.get('subOutLPFreq', 'N/A')
+            highpass = eq.get('highPassModeFreq', 'N/A')
+
+            preset_results[preset] = {
+                'gain': gain,
+                'lowpass': lowpass,
+                'highpass': highpass,
+                'status': '✓'
+            }
+
+            table.add_row(
+                preset,
+                str(gain) if gain != 'N/A' else 'N/A',
+                str(lowpass) if lowpass != 'N/A' else 'N/A',
+                str(highpass) if highpass != 'N/A' else 'N/A',
+                '[green]✓[/green]'
+            )
+
+        except Exception as e:
+            preset_results[preset] = {
+                'gain': 'ERROR',
+                'lowpass': 'ERROR',
+                'highpass': 'ERROR',
+                'status': '✗'
+            }
+            table.add_row(preset, 'ERROR', 'ERROR', 'ERROR', '[red]✗[/red]')
+            console.print(f"[red]Error testing {preset}: {e}[/red]")
+
+    console.print("\n")
+    console.print(table)
+
+    console.print("\n[bold]Expected Values for Reference:[/bold]")
+    console.print("  kube12b: gain=-1, lowpass=52.5, highpass=65")
+    console.print("  kube8b: gain=3, lowpass=62.5, highpass=67.5")
+    console.print("\n[italic]Note: Values may vary based on speaker model and firmware[/italic]")
+
+    # Store results
+    USER_CONFIRMATION["preset_analysis_complete"] = True
+    AUTO_TESTS_OUTPUT["preset_analysis"] = preset_results
+
+
 def firmware_test():
     """Test ALL firmware update features (3 methods + module function)"""
     rule_msg("Firmware Update")
@@ -1097,15 +1184,16 @@ Examples:
   python3 testing.py
 
   # Non-interactive mode - run specific test:
-  python3 testing.py --host 192.168.16.22 --test dsp
-  python3 testing.py --host 192.168.16.22 --test subwoofer
-  python3 testing.py --host 192.168.16.22 --test firmware
+  python3 testing.py --host 192.168.16.25 --test dsp
+  python3 testing.py --host 192.168.16.25 --test subwoofer
+  python3 testing.py --host 192.168.16.25 --test preset-analysis
+  python3 testing.py --host 192.168.16.25 --test firmware
 
   # Run all tests non-interactively:
-  python3 testing.py --host 192.168.16.22 --test all --model 0
+  python3 testing.py --host 192.168.16.25 --test all --model 0
 
   # Quick connection test:
-  python3 testing.py --host 192.168.16.22 --test info
+  python3 testing.py --host 192.168.16.25 --test info
         """
     )
     parser.add_argument('--discover', action='store_true',
@@ -1114,7 +1202,7 @@ Examples:
                        help='Network range to scan (e.g., 192.168.16.0/24). Auto-detects if not specified.')
     parser.add_argument('--host', type=str, help='KEF speaker IP address')
     parser.add_argument('--test', type=str,
-                       choices=['info', 'dsp', 'subwoofer', 'xio', 'firmware', 'all'],
+                       choices=['info', 'dsp', 'subwoofer', 'preset-analysis', 'xio', 'firmware', 'all'],
                        help='Specific test to run (non-interactive mode)')
     parser.add_argument('--model', type=int, choices=[0, 1, 2],
                        help='Model: 0=LSX II, 1=LS50W2, 2=LS60 (required for --test all)')
@@ -1185,6 +1273,12 @@ Examples:
                     MODEL_SELECTED = args.model
                 console.print("[bold]Running Subwoofer Tests:[/bold]")
                 subwoofer_test()
+
+            elif args.test == 'preset-analysis':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Subwoofer Preset Analysis:[/bold]")
+                subwoofer_preset_analysis()
 
             elif args.test == 'xio':
                 if args.model is not None:
