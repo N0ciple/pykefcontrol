@@ -1,6 +1,6 @@
 # 🔉 pykefcontrol
 
-Python library for controlling KEF speakers: LS50WII, LSX II and LS60
+Python library for controlling KEF wireless speakers: LS50 Wireless II, LS60 Wireless, LSX II, LSX II LT, and XIO Soundbar
 
 ⚠️ **Read the changelog to see breaking changes.**
 For the **async** version, please read [this section](#️-specificity-of-kefasyncconnector)
@@ -43,26 +43,44 @@ All KEF W2 platform speakers with network connectivity (WiFi/Ethernet) are suppo
 
 ### Current Implementation Status
 
-**✅ 100% COMPLETE - All 163 public methods implemented! 🎉**
+**✅ API Discovery 100% COMPLETE - All 209 KEF API endpoints discovered! 🎉**
 
-**Implemented (v0.8):**
+Using full JADX decompilation of KEF Connect v1.26.1 APK, we have discovered **ALL 209 API endpoints** from the definitive source code (`ApiPath.java`). This represents **89 new endpoints** beyond the previous 120 documented.
+
+**API Discovery Breakdown (209 total endpoints):**
+- 🔧 **124 Settings paths** (`settings:/`) - Speaker configuration
+- ⚙️ **37 KEF Operations** (`kef:`) - System operations
+- ▶️ **5 Player Control** (`player:`) - Playback control (NEW)
+- 🔋 **3 Power Management** (`powermanager:`) - Standby/reboot (NEW)
+- ⏰ **10 Alerts & Timers** (`alerts:/`) - Alarms and timers (NEW)
+- 📱 **4 Bluetooth** (`bluetooth:`) - BT device management (NEW)
+- 🔄 **3 Firmware Updates** (`firmwareupdate:`) - Update checking (NEW)
+- 📡 **5 Google Cast** (`googlecast:`) - Cast configuration (NEW)
+- 🌐 **7 Network** (`network:`/`networkwizard:`) - WiFi management
+- 🔗 **2 Grouping** (`grouping:`) - Multi-room grouping (NEW)
+- 🔔 **3 Notifications** (`notifications:/`) - UI notifications (NEW)
+- 🎛️ **6 Other** - XIO-specific and legacy endpoints (NEW)
+
+**Currently Implemented (v0.8 - 163 methods):**
 - ✅ **46 core methods** - Power, volume, source control, playback, queuing
-- ✅ **36 DSP/EQ methods** - Complete DSP control (desk mode, wall mode, bass extension, treble, balance, phase correction, high-pass filter, audio polarity)
-- ✅ **10 subwoofer methods** - Enable, gain, preset, low-pass, polarity, stereo mode (stereo has no effect)
-- ✅ **3 firmware methods** - Check updates, get status, install updates
-- ✅ **10 profile methods** - Save/load/list/delete/rename/export/import EQ profiles with metadata
-- ✅ **14 XIO methods** - Sound profiles (6 modes incl. dialogue), dialogueMode toggle (no effect), wall mount detection, room calibration (3 methods), BLE firmware updates (5 methods)
-- ✅ **6 Volume Management methods** - Per-input default volumes, volume behavior, global vs per-input mode
-- ✅ **6 Network Diagnostics methods** - Internet ping, network stability, speed test with results
-- ✅ **8 System Behavior methods** - Auto-standby modes, wake source, HDMI auto-switch, startup tone, USB charging, cable mode
-- ✅ **5 LED Control methods** - Front LED (no visible effect), standby LED, top panel (3 universal + 2 XIO-exclusive)
-- ✅ **7 Remote Control methods** - IR enable/disable, IR code sets, EQ button assignment (XIO), favourite button, fixed volume mode
-- ✅ **6 Device Info methods** - Model name, serial number, KEF ID, hardware version, MAC address
-- ✅ **4 Privacy/Streaming methods** - KEF analytics, app analytics, streaming quality (5 bitrates), UI language
-- ✅ **5 Advanced Operations methods** - Speaker location, DSP defaults restore, factory reset, DSP info, firmware upgrade progress
-- ✅ **2 Network Management methods** - WiFi network scanning, trigger WiFi scan
+- ✅ **36 DSP/EQ methods** - Complete DSP control
+- ✅ **10 subwoofer methods** - Enable, gain, preset, low-pass, polarity, stereo
+- ✅ **14 XIO methods** - Sound profiles, calibration, BLE firmware
+- ✅ **57 newly documented methods** - Volume management, network diagnostics, system behavior, LED/remote control, device info, privacy
 
-See **[apk_analysis.md](apk_analysis.md)** for complete API documentation and implementation roadmap.
+**To Be Implemented (89 new endpoints):**
+- ⏰ Alerts & Timers (10 methods)
+- 📱 Bluetooth Control (4 methods)
+- ▶️ Player Control (5 methods)
+- 🔋 Power Management (3 methods)
+- 🔄 Firmware Updates (3 methods)
+- 📡 Google Cast (3 methods)
+- 🔗 Multiroom Grouping (2 methods)
+- 🔔 Notifications (3 methods)
+- 🌐 Additional Network (5 methods)
+- 🎛️ Additional XIO features (6 methods)
+
+See **[apk_analysis.md](apk_analysis.md)** for complete API documentation with all 209 endpoints cataloged.
 
 ## ⬇️ Installation
 
