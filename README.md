@@ -1754,41 +1754,68 @@ For automated testing or quick verification, use command-line arguments:
 
 **Quick connection test:**
 ```bash
-python3 testing.py --host 192.168.16.22 --test info --model 0
+python3 testing.py --host 192.168.16.22 --test info --model LSXII
 ```
 
 **Test specific features:**
 ```bash
 # Test DSP/EQ features (desk mode, wall mode, bass, treble, balance, etc.)
-python3 testing.py --host 192.168.16.22 --test dsp --model 0
+python3 testing.py --host 192.168.16.22 --test dsp --model LSXII
 
 # Test subwoofer controls
-python3 testing.py --host 192.168.16.22 --test subwoofer --model 0
+python3 testing.py --host 192.168.16.22 --test subwoofer --model LSXII
 
 # Test firmware update features
-python3 testing.py --host 192.168.16.22 --test firmware --model 0
+python3 testing.py --host 192.168.16.22 --test firmware --model LSXII
 
 # Test XIO soundbar-specific features
-python3 testing.py --host 192.168.16.26 --test xio --model 0
+python3 testing.py --host 192.168.16.26 --test xio --model XIO
+
+# Test Bluetooth control (4 methods)
+python3 testing.py --host 192.168.16.22 --test bluetooth --model LSXII
+
+# Test Grouping/Multiroom (2 methods)
+python3 testing.py --host 192.168.16.22 --test grouping --model LSXII
+
+# Test Notifications (3 methods)
+python3 testing.py --host 192.168.16.22 --test notifications --model LSXII
+
+# Test Alerts & Timers (13 methods)
+python3 testing.py --host 192.168.16.22 --test alerts --model LSXII
+
+# Test Google Cast (3 methods)
+python3 testing.py --host 192.168.16.22 --test googlecast --model LSXII
+
+# Test ALL new API methods (25 methods total)
+python3 testing.py --host 192.168.16.22 --test new --model LSXII
 ```
 
 **Run all tests non-interactively:**
 ```bash
-python3 testing.py --host 192.168.16.22 --test all --model 0
+python3 testing.py --host 192.168.16.22 --test all --model LSXII
 ```
 
-**Model codes:**
-- `0` = LSX II
-- `1` = LS50 Wireless II
-- `2` = LS60
+**Model identifiers:**
+- `LSXII` = LSX II
+- `LSXIILT` = LSX II LT
+- `LS50WirelessII` = LS50 Wireless II
+- `LS60Wireless` = LS60 Wireless
+- `XIO` = XIO Soundbar
 
 **Available test suites:**
 - `info` - Speaker information only
 - `dsp` - DSP/EQ controls (11 methods)
 - `subwoofer` - Subwoofer controls (6 methods)
+- `preset-analysis` - Comprehensive subwoofer preset analysis
 - `xio` - XIO soundbar features (2 methods)
 - `firmware` - Firmware update features (3 methods)
-- `all` - Complete test suite
+- `bluetooth` - Bluetooth device management (4 methods) **NEW**
+- `grouping` - Multiroom speaker grouping (2 methods) **NEW**
+- `notifications` - UI notifications (3 methods) **NEW**
+- `alerts` - Alarms and timers (13 methods) **NEW**
+- `googlecast` - Google Cast configuration (3 methods) **NEW**
+- `new` - All new API methods (25 methods total) **NEW**
+- `all` - Complete test suite (188 methods)
 
 ## 🚧 Currently Working On
 
@@ -1993,6 +2020,40 @@ python apk_analysis.py --host YOUR_SPEAKER_IP --verbose
 ```
 
 The analysis achieved 98% feature parity with the KEF Connect app.
+
+## ⚠️ Known Limitations
+
+### XIO Soundbar API Limitations
+
+Several features are **not available** via HTTP API on XIO soundbar firmware V13120 (paths not implemented):
+
+**Alarms & Timers:**
+- ❌ `add_timer()`, `remove_timer()`, `add_alarm()`, `remove_alarm()`, `enable_alarm()`, `disable_alarm()`
+- ✅ `list_alerts()`, `get/set_snooze_time()`, `play/stop_default_alert_sound()`
+
+**Multiroom Grouping:**
+- ❌ `get_group_members()`, `save_persistent_group()` - XIO doesn't support multiroom
+
+**Bluetooth:**
+- ❌ `set_bluetooth_discoverable()`
+- ✅ `get_bluetooth_state()`, `disconnect_bluetooth()`, `clear_bluetooth_devices()`
+
+**Google Cast:**
+- ❌ `get_cast_usage_report()`, `set_cast_usage_report()`, `get_cast_tos_accepted()`
+
+**AirPlay Playback (FIRMWARE BUG):**
+- ❌ `next_track()`, `previous_track()` fail with "Control is not supported"
+- ❌ `toggle_play_pause()` may stop playback unexpectedly
+- ✅ **LSX II works perfectly** with AirPlay - this is XIO-specific
+- ⚠️ KEF Connect app also affected (next/prev buttons greyed out during AirPlay)
+- **Workaround:** Control playback from source device (iPhone, Mac, etc.)
+
+**TV Mode:**
+- When XIO source is set to TV, media controls (play/pause/next/prev) are unavailable
+
+**Workaround:** Use KEF Connect mobile app for unavailable features, or switch to WiFi/Bluetooth sources for full control.
+
+These are firmware limitations, not library bugs. See [CLAUDE.md](CLAUDE.md) for technical details.
 
 ## 📖 Developer Documentation
 

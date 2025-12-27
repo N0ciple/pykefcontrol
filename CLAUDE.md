@@ -343,21 +343,41 @@ python3 testing.py --discover --network 192.168.1.0/24
 python3 testing.py
 
 # Quick connection test
-python3 testing.py --host 192.168.1.100 --test info --model 0
+python3 testing.py --host 192.168.1.100 --test info --model LSXII
 
 # Test specific features
-python3 testing.py --host 192.168.1.100 --test dsp --model 0       # DSP/EQ
-python3 testing.py --host 192.168.1.100 --test subwoofer --model 0 # Subwoofer
-python3 testing.py --host 192.168.1.100 --test xio --model 0       # XIO features
+python3 testing.py --host 192.168.1.100 --test dsp --model LSXII           # DSP/EQ (11 methods)
+python3 testing.py --host 192.168.1.100 --test subwoofer --model LSXII     # Subwoofer (6 methods)
+python3 testing.py --host 192.168.1.100 --test xio --model XIO             # XIO features (2 methods)
+python3 testing.py --host 192.168.1.100 --test bluetooth --model LSXII     # Bluetooth (4 methods)
+python3 testing.py --host 192.168.1.100 --test alerts --model LSXII        # Alerts/Timers (13 methods)
+python3 testing.py --host 192.168.1.100 --test new --model LSXII           # All new APIs (25 methods)
 
 # Run all tests
-python3 testing.py --host 192.168.1.100 --test all --model 0
+python3 testing.py --host 192.168.1.100 --test all --model LSXII
 ```
 
-**Model Codes:**
-- `0` = LSX II
-- `1` = LS50 Wireless II
-- `2` = LS60
+**Model Identifiers:**
+- `LSXII` = LSX II
+- `LSXIILT` = LSX II LT
+- `LS50WirelessII` = LS50 Wireless II
+- `LS60Wireless` = LS60 Wireless
+- `XIO` = XIO Soundbar
+
+**Test Categories:**
+- `info` - Speaker information only
+- `dsp` - DSP/EQ controls (11 methods)
+- `subwoofer` - Subwoofer controls (6 methods)
+- `preset-analysis` - Comprehensive subwoofer preset analysis
+- `xio` - XIO soundbar features (2 methods)
+- `firmware` - Firmware update features (3 methods)
+- `bluetooth` - Bluetooth device management (4 methods)
+- `grouping` - Multiroom speaker grouping (2 methods)
+- `notifications` - UI notifications (3 methods)
+- `alerts` - Alarms and timers (13 methods)
+- `googlecast` - Google Cast configuration (3 methods)
+- `new` - All new API methods (25 methods total)
+- `all` - Complete test suite (188 methods)
 
 ## API Discovery (apk_analysis.py)
 
@@ -614,6 +634,83 @@ All fixes based on actual API testing of XIO soundbar (V13120):
 // EQ Profile (integers for gain, floats for others)
 {"subwooferGain":6,"trebleAmount":1.5,"subOutLPFreq":52.5}
 ```
+
+## Known Limitations
+
+### XIO Soundbar API Limitations
+
+The XIO soundbar (firmware V13120) has several API paths not implemented in the HTTP interface. These features work in the KEF Connect app but are not exposed via the public API.
+
+#### Alarm & Timer Management
+
+**Affected Methods:**
+- `add_timer()`, `remove_timer()` - Path "alerts:/timer/add" doesn't exist
+- `add_alarm()`, `remove_alarm()` - Path "alerts:/alarm/add" doesn't exist
+- `enable_alarm()`, `disable_alarm()` - Paths don't exist
+
+**Working Methods:**
+- ✅ `list_alerts()` - Read all alarms and timers
+- ✅ `get_snooze_time()`, `set_snooze_time()` - Snooze configuration
+- ✅ `play_default_alert_sound()`, `stop_default_alert_sound()` - Sound testing
+
+#### Multiroom Grouping
+
+**Affected Methods:**
+- `get_group_members()` - Path "grouping:members" doesn't exist
+- `save_persistent_group()` - Path "grouping:savePersistentGroup" doesn't exist
+
+**Note:** XIO soundbars do not support multiroom grouping functionality.
+
+#### Bluetooth Configuration
+
+**Affected Methods:**
+- `set_bluetooth_discoverable()` - Path "bluetooth:externalDiscoverable" doesn't exist
+
+**Working Methods:**
+- ✅ `get_bluetooth_state()` - Read Bluetooth status
+- ✅ `disconnect_bluetooth()` - Disconnect current device
+- ✅ `clear_bluetooth_devices()` - Unpair all devices
+
+#### Google Cast Configuration
+
+**Affected Methods:**
+- `get_cast_usage_report()` - Path "googlecast:usageReport" doesn't exist
+- `set_cast_usage_report()` - Fails due to above
+- `get_cast_tos_accepted()` - Returns errors
+
+**Note:** Google Cast configuration may not be available on XIO firmware.
+
+#### Media Controls with AirPlay
+
+**FIRMWARE BUG:** XIO soundbars have broken media controls when playing via AirPlay.
+
+**Symptoms:**
+- `next_track()`, `previous_track()` return error: "Control is not supported"
+- `toggle_play_pause()` may stop playback or eject speaker from AirPlay groups
+- KEF Connect app shows next/previous buttons **greyed out** during AirPlay playback
+- Affects both single-speaker AirPlay and AirPlay speaker groups
+
+**Comparison:**
+- ✅ **LSX II**: Media controls work perfectly with AirPlay
+- ❌ **XIO**: Media controls broken with AirPlay (firmware V13120)
+
+**Status:** This is an XIO firmware bug that also affects the official KEF Connect app. Should be reported to KEF support.
+
+**Workaround:** Control playback directly from the source device/app (iPhone, Mac, etc.) instead of using speaker controls.
+
+#### TV Mode Restrictions
+
+When XIO is set to TV source, additional restrictions apply:
+- Media playback controls may be limited
+- Track navigation (next/previous) unavailable
+- Play/pause/stop may not function
+
+**Workaround:** Switch to WiFi, Bluetooth, or other sources for full media control.
+
+**Technical Details:**
+These API paths are defined in the KEF Connect app's API specification (ApiPath.java) but are not implemented in XIO's HTTP API endpoint. The app likely uses alternative communication methods not exposed in the public API.
+
+**Status:** These are XIO firmware limitations, not library bugs.
 
 ## Contributors
 
