@@ -667,19 +667,29 @@ This section documents which pykefcontrol features are exposed in the hass-kef-c
 - API returns alarm/timer data but write operations don't work
 - Tested in previous session - XIO firmware doesn't support modifications
 
+**Fixed Volume Mode** - API accepts values but has no effect on XIO:
+- `get_fixed_volume_mode()`, `set_fixed_volume_mode()` methods exist
+- API accepts and returns values, but volume is NOT actually locked
+- Tested: Set fixed volume to 35, then successfully changed volume to 40
+- May work on bookshelf models (LSX II, LS50 Wireless II) but not XIO
+- Should NOT be added to hass-kef-connector as high priority (needs testing on other models)
+
 ### Missing Features - High Priority 🔥
 
-**1. HDMI & Input Controls (2 methods)**
+**1. HDMI Auto-Switch (2 methods) - ✅ TESTED WORKING**
 - `get_auto_switch_hdmi()`, `set_auto_switch_hdmi()` - Auto-switch to HDMI when TV turns on
-- `get_wake_source()`, `set_wake_source()` - Which input wakes the speaker
 - **Impact:** Critical for XIO soundbar users
-- **Recommendation:** `switch` for auto_switch, `select` for wake_source
+- **Recommendation:** Add as `switch` entity
+- **Test Result:** Successfully toggled True/False on XIO - fully functional
 
-**2. Fixed Volume Mode (2 methods)**
-- `get_fixed_volume_mode()`, `set_fixed_volume_mode()` - Lock volume for home theater AVR setups
-- **Impact:** Important for users with external AVRs controlling volume
-- **Recommendation:** `number` entity (0=disabled, 1-100=fixed volume level)
-- **Note:** Part of volume management but not yet exposed in config_flow
+**2. Wake Source (2 methods) - ✅ TESTED WORKING (bug fixed)**
+- `get_wake_source()`, `set_wake_source()` - Which input wakes the speaker from standby
+- **Valid Options:** wakeup_default, tv, wifi, bluetooth, optical, coaxial, analog, usb
+- **Impact:** Important for all KEF W2 speakers - determines which input can wake speaker
+- **Recommendation:** Add as `select` entity with options matching model's available inputs (all models)
+- **Note:** Available wake sources vary by model (e.g., XIO: tv/wifi/bluetooth/optical; LSX II: tv/wifi/bluetooth/optical/analog/usb)
+- **Test Result:** All wake sources work correctly on XIO after fixing API parsing bug
+- **Bug Fixed:** Was reading 'string_' field instead of 'kefWakeUpSource' field (commit d8ca20c)
 
 ### Missing Features - Medium Priority ⚠️
 
@@ -746,24 +756,37 @@ This section documents which pykefcontrol features are exposed in the hass-kef-c
 
 - **Total pykefcontrol methods:** ~188
 - **Currently exposed in HA:** ~50 methods (27%) - includes full volume management in config_flow
-- **Missing features:** ~138 methods (73%)
-- **Cannot be implemented:** ~13 methods (Alarms/Timers - XIO has read-only access)
+- **Missing and working:** ~135 methods (72%)
+- **Cannot be implemented:** ~15 methods (Alarms/Timers read-only on XIO, Fixed Volume no effect on XIO)
 
 **Priority Breakdown:**
-- 🔥 **HIGH PRIORITY:** ~4 methods - HDMI Auto-Switch, Wake Source, Fixed Volume Mode
+- 🔥 **HIGH PRIORITY:** 4 methods - HDMI Auto-Switch (2), Wake Source (2) - ✅ BOTH TESTED WORKING
 - ⚠️ **MEDIUM PRIORITY:** ~16 methods - Bluetooth, Remote, Privacy, Maintenance, Grouping
 - 🔵 **LOW PRIORITY:** ~105 methods - Diagnostics, Localization, BLE, Device Info
-- ❌ **CANNOT IMPLEMENT:** ~13 methods - Alarms/Timers (read-only on XIO)
+- ❌ **CANNOT IMPLEMENT:** ~15 methods - Alarms/Timers (read-only), Fixed Volume (no effect on XIO)
 
 **Next Steps for hass-kef-connector:**
-1. Add HDMI Auto-Switch and Wake Source controls - critical for XIO soundbar users
-2. Expose Fixed Volume Mode in config_flow - for home theater AVR setups
+1. ✅ **Add HDMI Auto-Switch** - `switch` entity (tested working on XIO)
+2. ✅ **Add Wake Source** - `select` entity with model-specific input options (tested working, bug fixed in pykefcontrol)
 3. Consider Bluetooth management features - make discoverable, disconnect, clear devices
 4. Add Privacy & Analytics switches - let users control telemetry
 
-## Recent Bug Fixes (2025-12-25)
+## Recent Bug Fixes
 
-### XIO Calibration Parsing
+### Wake Source API Parsing (2025-12-27)
+**Issue:** `get_wake_source()` always returned "wakeup_default" regardless of actual setting. Feature appeared non-functional even though it works in KEF Connect app.
+
+**Root Cause:** API returns `{"type":"kefWakeUpSource","kefWakeUpSource":"tv"}` but code was looking for `"string_"` field. Both GET and SET methods used wrong field names.
+
+**Fix (commit d8ca20c):**
+- `get_wake_source()`: Changed from `json[0].get("string_")` to `json[0].get("kefWakeUpSource")` (lines 1005, 5129)
+- `set_wake_source()`: Changed value format from `{"type":"string_","string_":"..."}` to `{"type":"kefWakeUpSource","kefWakeUpSource":"..."}` (lines 1023, 5139)
+
+**Testing:** All wake sources verified working on XIO (wakeup_default, tv, wifi, bluetooth, optical)
+
+**Status:** ✅ Fixed - Wake source feature now fully functional for all KEF W2 platform speakers
+
+### XIO Calibration Parsing (2025-12-25)
 **Issue:** Calibration status showed "Not calibrated" when speaker was calibrated, and adjustment dB showed 0 instead of actual value.
 
 **Root Cause:** API returns nested structure `{"kefDspCalibrationStatus": {...}}` but code was parsing flat structure. Adjustment uses `double_` type, not `i32_`.
