@@ -618,6 +618,149 @@ See [apk_analysis.md](apk_analysis.md) for complete API documentation and featur
 - **hass-kef-connector:** Home Assistant integration using this library
 - **aiokef:** Library for KEF Gen 1 speakers (LS50W, LSX Gen 1)
 
+## Home Assistant Integration Feature Gap Analysis
+
+This section documents which pykefcontrol features are exposed in the hass-kef-connector Home Assistant integration and which are still missing.
+
+### Currently Implemented in Home Assistant ✅
+
+**Media Player:**
+- Power, volume, mute, source selection
+- Media controls (play/pause/next/previous)
+- Media info (title, artist, album, codec, virtualizer)
+
+**Switch Entities:**
+- DSP: desk_mode, wall_mode, phase_correction, high_pass_mode
+- Subwoofer: subwoofer_enabled, kw1_adapter, subwoofer_wake_on_startup, kw1_wake_on_startup
+- LEDs: front_led, standby_led, control_panel_lock, control_panel_led
+- System: startup_tone, wall_mounted (XIO)
+
+**Number Entities:**
+- DSP: treble, balance, desk_mode_db, wall_mode_db, high_pass_freq
+- Subwoofer: subwoofer_gain, subwoofer_crossover
+
+**Select Entities:**
+- DSP: bass_extension, audio_polarity
+- Subwoofer: subwoofer_preset, subwoofer_polarity
+- System: standby_mode, cable_mode, master_channel
+- XIO: sound_profile
+- EQ profiles
+
+**Sensor Entities:**
+- Audio: codec, virtualizer, sample_rate (XIO only)
+- WiFi: signal_strength, frequency
+- Calibration: status (XIO only)
+
+### Already Implemented ✅ (Correction)
+
+**Volume Management** - FULLY IMPLEMENTED in config_flow.py:
+- Volume limits (max volume, step size) - Lines 424-480
+- Global startup volume - Lines 482-518
+- Per-input startup volumes - Lines 520-573
+- Disable startup volume - Lines 575-587
+
+**Dialogue Mode** - Already exists as part of sound_profile select (XIO):
+- `sound_profile` select includes "dialogue" option
+- Not a separate `dialogue_mode` API method
+
+**Alarms & Timers** - XIO has READ-ONLY access (cannot be implemented):
+- API returns alarm/timer data but write operations don't work
+- Tested in previous session - XIO firmware doesn't support modifications
+
+### Missing Features - High Priority 🔥
+
+**1. HDMI & Input Controls (2 methods)**
+- `get_auto_switch_hdmi()`, `set_auto_switch_hdmi()` - Auto-switch to HDMI when TV turns on
+- `get_wake_source()`, `set_wake_source()` - Which input wakes the speaker
+- **Impact:** Critical for XIO soundbar users
+- **Recommendation:** `switch` for auto_switch, `select` for wake_source
+
+**2. Fixed Volume Mode (2 methods)**
+- `get_fixed_volume_mode()`, `set_fixed_volume_mode()` - Lock volume for home theater AVR setups
+- **Impact:** Important for users with external AVRs controlling volume
+- **Recommendation:** `number` entity (0=disabled, 1-100=fixed volume level)
+- **Note:** Part of volume management but not yet exposed in config_flow
+
+### Missing Features - Medium Priority ⚠️
+
+**5. Bluetooth Management (4 methods)**
+- `get_bluetooth_state()`, `disconnect_bluetooth()`
+- `set_bluetooth_discoverable()`, `clear_bluetooth_devices()`
+- **Recommendation:** `sensor` for state, `button` for actions, `switch` for discoverable
+
+**6. Remote Control Configuration (4 methods)**
+- `get_remote_ir_enabled()`, `set_remote_ir_enabled()`
+- `get_ir_code_set()`, `set_ir_code_set()`
+- `get_eq_button()`, `set_eq_button()`, `get_favourite_button_action()`, `set_favourite_button_action()`
+- **Recommendation:** Configure physical remote EQ buttons and IR code sets
+
+**7. Privacy & Analytics (4 methods)**
+- `get_analytics_enabled()`, `set_analytics_enabled()`
+- `get_app_analytics_enabled()`, `set_app_analytics_enabled()`
+- **Recommendation:** `switch` entities for privacy control
+
+**8. System Maintenance (2 methods)**
+- `restore_dsp_defaults()` - Reset DSP settings to factory defaults
+- `factory_reset()` - Full factory reset
+- **Recommendation:** `button` entities with confirmation dialogs
+
+**9. Multiroom/Grouping (2 methods)**
+- `get_group_members()` - List speakers in current group
+- `save_persistent_group()` - Save group configuration
+- **Recommendation:** `sensor` for members, `button` for save
+
+**10. LED Controls - Missing Feature**
+- `get_top_panel_standby_led()`, `set_top_panel_standby_led()` - XIO control panel LED in standby
+- **Note:** Already have `top_panel_led` but missing standby variant
+- **Recommendation:** Add `switch` entity (XIO only)
+
+### Missing Features - Low Priority 🔵
+
+**11. Network Diagnostics (7 methods)**
+- `ping_internet()`, `get_network_stability()`
+- `start_speed_test()`, `get_speed_test_status()`, `get_speed_test_results()`, `stop_speed_test()`
+- `scan_wifi_networks()`, `activate_wifi_scan()`
+
+**12. Localization (4 methods)**
+- `get_ui_language()`, `set_ui_language()`
+- `get_speaker_location()`, `set_speaker_location()`
+
+**13. Device Information (4 methods)**
+- `get_device_info()`, `get_kef_id()`, `get_hardware_version()`
+
+**14. BLE Firmware Updates (5 methods)**
+- `check_ble_firmware_update()`, `get_ble_firmware_status()`, `get_ble_firmware_version()`
+- `install_ble_firmware_now()`, `install_ble_firmware_later()`
+- **Note:** For KC62/KF92 wireless subwoofers only
+
+**15. Google Cast Settings (2 methods)**
+- `get_cast_usage_report()`, `set_cast_usage_report()`, `get_cast_tos_accepted()`
+
+**16. Streaming Quality (2 methods)**
+- `get_streaming_quality()`, `set_streaming_quality()`
+
+**17. USB Charging (2 methods)**
+- `get_usb_charging()`, `set_usb_charging()` - Enable/disable USB port charging
+
+### Summary Statistics
+
+- **Total pykefcontrol methods:** ~188
+- **Currently exposed in HA:** ~50 methods (27%) - includes full volume management in config_flow
+- **Missing features:** ~138 methods (73%)
+- **Cannot be implemented:** ~13 methods (Alarms/Timers - XIO has read-only access)
+
+**Priority Breakdown:**
+- 🔥 **HIGH PRIORITY:** ~4 methods - HDMI Auto-Switch, Wake Source, Fixed Volume Mode
+- ⚠️ **MEDIUM PRIORITY:** ~16 methods - Bluetooth, Remote, Privacy, Maintenance, Grouping
+- 🔵 **LOW PRIORITY:** ~105 methods - Diagnostics, Localization, BLE, Device Info
+- ❌ **CANNOT IMPLEMENT:** ~13 methods - Alarms/Timers (read-only on XIO)
+
+**Next Steps for hass-kef-connector:**
+1. Add HDMI Auto-Switch and Wake Source controls - critical for XIO soundbar users
+2. Expose Fixed Volume Mode in config_flow - for home theater AVR setups
+3. Consider Bluetooth management features - make discoverable, disconnect, clear devices
+4. Add Privacy & Analytics switches - let users control telemetry
+
 ## Recent Bug Fixes (2025-12-25)
 
 ### XIO Calibration Parsing
