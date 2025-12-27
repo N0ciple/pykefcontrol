@@ -319,6 +319,31 @@ while True:
 - `device_name` - Speaker renamed
 - `other` - Other speaker-specific changes
 
+## Testing Policy (CRITICAL - Always Follow)
+
+### File Management Rules
+
+**Documentation Files:**
+- ✅ **ONLY use [CLAUDE.md](CLAUDE.md) and [README.md](README.md)** for all documentation
+- ❌ **NEVER create** additional .md files (e.g., TESTING_SUMMARY.md, NOTES.md, XIO_DOCS.md, etc.)
+- All findings, testing results, bug reports, and notes **must be consolidated** into these two files only
+
+**Testing Files:**
+- ✅ **ONLY use [testing.py](testing.py)** for all testing work
+- ❌ **NEVER create** temporary test files (e.g., test_*.py, quick_test.py, discover_*.py, inspect_*.py)
+- Update [testing.py](testing.py) directly when new tests are needed
+- Delete any temporary test files immediately after use
+
+**Why This Matters:**
+- Keeps repository clean and organized
+- Prevents clutter and confusion across sessions
+- Ensures all information is in known, consistent locations
+- Policies documented here persist across AI assistant sessions
+- Makes it easy to find all documentation and testing code
+
+**If You Violate This Policy:**
+The user will remind you to clean up and consolidate. Save time by following these rules from the start.
+
 ## Testing and Discovery
 
 ### Network Discovery
