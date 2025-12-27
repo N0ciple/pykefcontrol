@@ -470,6 +470,92 @@ def save_results(model_results: Dict[str, Dict[str, Any]], output_file: str):
     print(f"Results saved to: {output_file}")
 
 
+def extract_preset_values():
+    """Extract and display subwoofer preset values from KEF Connect APK.
+
+    Displays hardcoded preset values extracted from decompiled KEF Connect APK.
+    Use when updating SUBWOOFER_PRESET_VALUES in kef_connector.py.
+
+    Source files in APK:
+    - com/kef/streamunlimitedapi/equalizer/model/SubwooferModelSubGainKt.java (gain)
+    - com/kef/streamunlimitedapi/equalizer/model/SubwooferModelKt.java (frequencies)
+    """
+    print("=" * 80)
+    print("KEF SUBWOOFER PRESET VALUE EXTRACTION")
+    print("Source: KEF Connect APK v1.26.1")
+    print("=" * 80)
+    print()
+
+    # Gain values from SubwooferModelSubGainKt.java (subgainForLSXII function)
+    gain_lsxii = {
+        'other': {False: {1: -6.0, 2: 0.0}},
+        'kc62': {True: {1: -2.0, 2: 4.0}, False: {1: -7.0, 2: -1.0}},
+        'kf92': {True: {1: -4.0, 2: 2.0}, False: {1: -9.0, 2: -3.0}},
+        'kube8b': {True: {1: -4.0, 2: 2.0}, False: {1: -3.0, 2: 3.0}},
+        'kube10b': {True: {1: -6.0, 2: 0.0}, False: {1: -5.0, 2: 1.0}},
+        'kube12b': {True: {1: -8.0, 2: -2.0}, False: {1: -7.0, 2: -1.0}},
+        'kube15mie': {True: {1: -7.0, 2: -1.0}, False: {1: -6.0, 2: 0.0}},
+        't2': {False: {1: -7.0, 2: -1.0}},
+    }
+
+    # High-pass frequencies from SubwooferModelKt.java (highPassFreq function)
+    highpass_lsxii = {
+        'other': 65.0, 'kc62': 67.5, 'kf92': 67.5, 'kube8b': 67.5,
+        'kube10b': 67.5, 'kube12b': 65.0, 'kube15mie': 65.0,
+        't2': {True: None, False: 67.5},
+    }
+
+    # Low-pass frequencies from SubwooferModelKt.java (lowPassFreq function)
+    lowpass_lsxii = {
+        'other': 55.0, 'kc62': 55.0, 'kf92': 55.0, 'kube8b': 62.5,
+        'kube10b': 55.0, 'kube12b': 52.5, 'kube15mie': 57.5,
+        't2': {True: None, False: 62.5},
+    }
+
+    # Display gain values
+    print("GAIN VALUES (dB) - XIO / LSX II / LSX II LT")
+    print("-" * 80)
+    for preset, kw1_map in gain_lsxii.items():
+        for is_kw1, count_map in kw1_map.items():
+            for count, gain in count_map.items():
+                kw1_str = "KW1" if is_kw1 else "Internal"
+                print(f"  {preset:12} | {kw1_str:8} | {count} sub(s) | Gain: {gain:5.1f} dB")
+        print()
+
+    # Display high-pass values
+    print("HIGH-PASS FREQUENCIES (Hz) - XIO / LSX II / LSX II LT")
+    print("-" * 80)
+    for preset, value in highpass_lsxii.items():
+        if isinstance(value, dict):
+            for is_kw1, freq in value.items():
+                kw1_str = "KW1" if is_kw1 else "Internal"
+                freq_str = f"{freq:.1f}" if freq is not None else "N/A"
+                print(f"  {preset:12} | {kw1_str:8} | High-pass: {freq_str:5} Hz")
+        else:
+            print(f"  {preset:12} | Both     | High-pass: {value:5.1f} Hz")
+    print()
+
+    # Display low-pass values
+    print("LOW-PASS FREQUENCIES (Hz) - XIO / LSX II / LSX II LT")
+    print("-" * 80)
+    for preset, value in lowpass_lsxii.items():
+        if isinstance(value, dict):
+            for is_kw1, freq in value.items():
+                kw1_str = "KW1" if is_kw1 else "Internal"
+                freq_str = f"{freq:.1f}" if freq is not None else "N/A"
+                print(f"  {preset:12} | {kw1_str:8} | Low-pass: {freq_str:5} Hz")
+        else:
+            print(f"  {preset:12} | Both     | Low-pass: {value:5.1f} Hz")
+    print()
+
+    print("!" * 80)
+    print("CRITICAL: XIO/LSX2/LSX2LT have INVERTED subwoofer count mapping!")
+    print("  Java 'subCount=1' applies when speaker has 2 subs configured")
+    print("  Java 'subCount=2' applies when speaker has 1 sub configured")
+    print("  Verified with XIO hardware and KEF Connect app v1.26.1")
+    print("!" * 80)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Test KEF API Discovery across speaker models',

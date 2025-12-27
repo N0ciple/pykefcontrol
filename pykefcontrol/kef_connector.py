@@ -23,8 +23,76 @@ SOUND_PROFILES = ["default", "music", "movie", "night", "dialogue", "direct"]
 # Subwoofer presets (auto-adjust settings based on subwoofer model)
 SUBWOOFER_PRESETS = [
     "custom", "kc62", "kf92", "kube8b", "kube10b",
-    "kube12b", "kube15", "t2"
+    "kube12b", "kube15mie", "t2"
 ]
+
+# Subwoofer preset values extracted from KEF Connect APK v1.26.1
+# Source files in APK:
+#   - com/kef/streamunlimitedapi/equalizer/model/SubwooferModelKt.java
+#   - com/kef/streamunlimitedapi/equalizer/model/SubwooferModelSubGainKt.java
+#
+# Structure: PRESET_VALUES[speaker_model][preset][(is_kw1, subwoofer_count)]
+#   Returns: {'gain': float, 'lowpass': float, 'highpass': float}
+#
+# Note: XIO uses internal wireless transmitter (is_kw1=False)
+#       LSX2/LSX2LT use same values as XIO
+SUBWOOFER_PRESET_VALUES = {
+    # NOTE: XIO/LSX2/LSX2LT use INVERTED subwoofer count mapping!
+    # The Java code values for "1 subwoofer" actually apply when "2 subwoofers" is configured, and vice versa.
+    # Values below have already been swapped to match actual speaker behavior.
+    'XIO': {
+        'kc62': {
+            (False, 1): {'gain': -1.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (False, 2): {'gain': -7.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (True, 1): {'gain': 4.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (True, 2): {'gain': -2.0, 'lowpass': 55.0, 'highpass': 67.5},
+        },
+        'kf92': {
+            (False, 1): {'gain': -3.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (False, 2): {'gain': -9.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (True, 1): {'gain': 2.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (True, 2): {'gain': -4.0, 'lowpass': 55.0, 'highpass': 67.5},
+        },
+        'kube8b': {
+            (False, 1): {'gain': 3.0, 'lowpass': 62.5, 'highpass': 67.5},
+            (False, 2): {'gain': -3.0, 'lowpass': 62.5, 'highpass': 67.5},
+            (True, 1): {'gain': 2.0, 'lowpass': 62.5, 'highpass': 67.5},
+            (True, 2): {'gain': -4.0, 'lowpass': 62.5, 'highpass': 67.5},
+        },
+        'kube10b': {
+            (False, 1): {'gain': 1.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (False, 2): {'gain': -5.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (True, 1): {'gain': 0.0, 'lowpass': 55.0, 'highpass': 67.5},
+            (True, 2): {'gain': -6.0, 'lowpass': 55.0, 'highpass': 67.5},
+        },
+        'kube12b': {
+            (False, 1): {'gain': -1.0, 'lowpass': 52.5, 'highpass': 65.0},
+            (False, 2): {'gain': -7.0, 'lowpass': 52.5, 'highpass': 65.0},
+            (True, 1): {'gain': -2.0, 'lowpass': 52.5, 'highpass': 65.0},
+            (True, 2): {'gain': -8.0, 'lowpass': 52.5, 'highpass': 65.0},
+        },
+        'kube15mie': {
+            (False, 1): {'gain': 0.0, 'lowpass': 57.5, 'highpass': 65.0},
+            (False, 2): {'gain': -6.0, 'lowpass': 57.5, 'highpass': 65.0},
+            (True, 1): {'gain': -1.0, 'lowpass': 57.5, 'highpass': 65.0},
+            (True, 2): {'gain': -7.0, 'lowpass': 57.5, 'highpass': 65.0},
+        },
+        't2': {
+            (False, 1): {'gain': -1.0, 'lowpass': 62.5, 'highpass': 67.5},
+            (False, 2): {'gain': -7.0, 'lowpass': 62.5, 'highpass': 67.5},
+        },
+        'custom': {
+            # Custom preset - use current values, don't change anything
+        },
+    },
+    # LSX2 and LSX2LT use same values as XIO
+    'LSXII': {},  # Populated below
+    'LSX2LT': {},  # Populated below
+}
+
+# Copy XIO values to LSX2 and LSX2LT
+SUBWOOFER_PRESET_VALUES['LSXII'] = SUBWOOFER_PRESET_VALUES['XIO'].copy()
+SUBWOOFER_PRESET_VALUES['LSX2LT'] = SUBWOOFER_PRESET_VALUES['XIO'].copy()
 
 # Desk Mode: -10dB to 0dB in 0.5dB steps (0-20, where 20=0dB, 0=-10dB)
 DESK_MODE_SETTING_MIN = 0
@@ -3914,11 +3982,12 @@ class KefConnector:
     def set_subwoofer_preset(self, preset):
         """Set subwoofer preset (v2 API).
 
-        Setting a preset automatically adjusts subwoofer settings for that KEF subwoofer model.
+        Setting a preset automatically adjusts subwoofer gain, low-pass filter,
+        and high-pass filter settings for that KEF subwoofer model.
 
         Args:
             preset (str): Subwoofer preset - "custom", "kube8b", "kc62", "kf92",
-                         "kube10b", "kube12b", "kube15", "t2", etc.
+                         "kube10b", "kube12b", "kube15mie", "t2", etc.
 
         Returns:
             dict: JSON response from speaker
@@ -3929,6 +3998,36 @@ class KefConnector:
         if preset not in SUBWOOFER_PRESETS:
             raise ValueError(f"preset must be one of {SUBWOOFER_PRESETS}, got {preset}")
 
+        # Get current profile to determine speaker model and subwoofer count
+        profile = self.get_eq_profile()
+        eq_data = profile.get('kefEqProfileV2', {})
+
+        # Get current configuration
+        is_kw1 = eq_data.get('isKW1', False)
+        sub_count = eq_data.get('subwooferCount', 1)
+
+        # Look up preset values for this speaker model
+        speaker_model = self.speaker_model  # XIO, LSXII, LSX2LT, etc.
+
+        # Get preset values if available
+        if speaker_model in SUBWOOFER_PRESET_VALUES:
+            preset_data = SUBWOOFER_PRESET_VALUES[speaker_model].get(preset, {})
+            lookup_key = (is_kw1, sub_count)
+
+            if lookup_key in preset_data:
+                values = preset_data[lookup_key]
+
+                # Update all three values atomically
+                eq_data['subwooferPreset'] = preset
+                eq_data['subwooferGain'] = values['gain']
+                eq_data['subOutLPFreq'] = values['lowpass']
+                eq_data['highPassModeFreq'] = values['highpass']
+
+                # Apply the updated profile
+                return self.set_eq_profile(profile)
+
+        # Fallback: just set the preset name (old behavior)
+        # This happens for 'custom' preset or unsupported speaker models
         return self.update_dsp_setting('subwooferPreset', preset)
 
     def get_subwoofer_lowpass(self):
@@ -7537,11 +7636,12 @@ class KefAsyncConnector:
     async def set_subwoofer_preset(self, preset):
         """Set subwoofer preset (v2 API).
 
-        Setting a preset automatically adjusts subwoofer settings for that KEF subwoofer model.
+        Setting a preset automatically adjusts subwoofer gain, low-pass filter,
+        and high-pass filter settings for that KEF subwoofer model.
 
         Args:
             preset (str): Subwoofer preset - "custom", "kube8b", "kc62", "kf92",
-                         "kube10b", "kube12b", "kube15", "t2", etc.
+                         "kube10b", "kube12b", "kube15mie", "t2", etc.
 
         Returns:
             dict: JSON response from speaker
@@ -7552,6 +7652,36 @@ class KefAsyncConnector:
         if preset not in SUBWOOFER_PRESETS:
             raise ValueError(f"preset must be one of {SUBWOOFER_PRESETS}, got {preset}")
 
+        # Get current profile to determine speaker model and subwoofer count
+        profile = await self.get_eq_profile()
+        eq_data = profile.get('kefEqProfileV2', {})
+
+        # Get current configuration
+        is_kw1 = eq_data.get('isKW1', False)
+        sub_count = eq_data.get('subwooferCount', 1)
+
+        # Look up preset values for this speaker model
+        speaker_model = await self.get_speaker_model()  # XIO, LSXII, LSX2LT, etc.
+
+        # Get preset values if available
+        if speaker_model in SUBWOOFER_PRESET_VALUES:
+            preset_data = SUBWOOFER_PRESET_VALUES[speaker_model].get(preset, {})
+            lookup_key = (is_kw1, sub_count)
+
+            if lookup_key in preset_data:
+                values = preset_data[lookup_key]
+
+                # Update all three values atomically
+                eq_data['subwooferPreset'] = preset
+                eq_data['subwooferGain'] = values['gain']
+                eq_data['subOutLPFreq'] = values['lowpass']
+                eq_data['highPassModeFreq'] = values['highpass']
+
+                # Apply the updated profile
+                return await self.set_eq_profile(profile)
+
+        # Fallback: just set the preset name (old behavior)
+        # This happens for 'custom' preset or unsupported speaker models
         return await self.update_dsp_setting('subwooferPreset', preset)
 
     async def get_subwoofer_lowpass(self):
