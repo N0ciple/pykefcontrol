@@ -61,23 +61,17 @@ Using full JADX decompilation of KEF Connect v1.26.1 APK, we have discovered **A
 - 🔔 **3 Notifications** (`notifications:/`) - UI notifications (NEW)
 - 🎛️ **6 Other** - XIO-specific and legacy endpoints (NEW)
 
-**Currently Implemented (v0.8 - 163 methods):**
+**Currently Implemented (v0.9 - 188 methods):**
 - ✅ **46 core methods** - Power, volume, source control, playback, queuing
 - ✅ **36 DSP/EQ methods** - Complete DSP control
 - ✅ **10 subwoofer methods** - Enable, gain, preset, low-pass, polarity, stereo
 - ✅ **14 XIO methods** - Sound profiles, calibration, BLE firmware
-- ✅ **57 newly documented methods** - Volume management, network diagnostics, system behavior, LED/remote control, device info, privacy
+- ✅ **57 system methods** - Volume management, network diagnostics, system behavior, LED/remote control, device info, privacy
+- ✅ **25 NEW methods** - Bluetooth (4), Alerts/Timers (13), Grouping (2), Notifications (3), Google Cast (3)
 
-**To Be Implemented (89 new endpoints):**
-- ⏰ Alerts & Timers (10 methods)
-- 📱 Bluetooth Control (4 methods)
-- ▶️ Player Control (5 methods)
-- 🔋 Power Management (3 methods)
-- 🔄 Firmware Updates (3 methods)
-- 📡 Google Cast (3 methods)
-- 🔗 Multiroom Grouping (2 methods)
-- 🔔 Notifications (3 methods)
-- 🌐 Additional Network (5 methods)
+**Remaining (~5 endpoints - mostly redundant):**
+- ▶️ Player Control (5 methods) - Already covered via polling/playback methods
+- 🔋 Power Management (3 methods) - Already covered via power_on/shutdown
 - 🎛️ Additional XIO features (6 methods)
 
 See **[apk_analysis.md](apk_analysis.md)** for complete API documentation with all 209 endpoints cataloged.
