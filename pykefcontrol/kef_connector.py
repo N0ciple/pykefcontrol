@@ -1002,7 +1002,7 @@ class KefConnector:
         ) as response:
             json_output = response.json()
 
-        return json_output[0].get("string_", "wakeup_default")
+        return json_output[0].get("kefWakeUpSource", "wakeup_default")
 
     def set_wake_source(self, source):
         """Set wake-up source.
@@ -1020,7 +1020,7 @@ class KefConnector:
         payload = {
             "path": "settings:/kef/host/wakeUpSource",
             "roles": "value",
-            "value": f'{{"type":"string_","string_":"{source}"}}',
+            "value": f'{{"type":"kefWakeUpSource","kefWakeUpSource":"{source}"}}',
         }
 
         with requests.get(
@@ -5126,7 +5126,7 @@ class KefAsyncConnector:
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
             json_output = await response.json()
-        return json_output[0].get("string_", "wakeup_default")
+        return json_output[0].get("kefWakeUpSource", "wakeup_default")
 
     async def set_wake_source(self, source):
         """Set wake-up source."""
@@ -5136,7 +5136,7 @@ class KefAsyncConnector:
         payload = {
             "path": "settings:/kef/host/wakeUpSource",
             "roles": "value",
-            "value": f'{{"type":"string_","string_":"{source}"}}',
+            "value": f'{{"type":"kefWakeUpSource","kefWakeUpSource":"{source}"}}',
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
