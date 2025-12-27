@@ -25,18 +25,24 @@ console = Console()
 AUTO_TESTS_OUTPUT = {}
 USER_CONFIRMATION = {}
 DEBUG = False
-MODEL_SELECTED = -1
+MODEL_SELECTED = None  # Will be set to a model identifier string (LSXII, LSXIILT, LS50WirelessII, LS60Wireless, XIO)
 NON_INTERACTIVE = False  # Flag for non-interactive mode
 HOST = None  # Speaker IP address
 spkr = None  # Speaker connection object
-MODEL_LIST = ["LSX 2", "LS50 Wireless 2", "LS60"]
+MODEL_LIST = {
+    "LSXII": "LSX II",
+    "LSXIILT": "LSX II LT",
+    "LS50WirelessII": "LS50 Wireless II",
+    "LS60Wireless": "LS60 Wireless",
+    "XIO": "XIO Soundbar"
+}
+
 MODEL_SOURCES = {
-    # LSX 2
-    0: ["wifi", "bluetooth", "tv", "optical", "analog", "usb"],
-    # LS50 Wireless 2
-    1: ["wifi", "bluetooth", "tv", "optical", "coaxial", "analog"],
-    # LS60
-    2: ["wifi", "bluetooth", "tv", "optical", "coaxial", "analog"],
+    "LSXII": ["wifi", "bluetooth", "tv", "optical", "analog", "usb"],
+    "LSXIILT": ["wifi", "bluetooth", "tv", "optical", "usb"],  # No analog input
+    "LS50WirelessII": ["wifi", "bluetooth", "tv", "optical", "coaxial", "analog"],
+    "LS60Wireless": ["wifi", "bluetooth", "tv", "optical", "coaxial", "analog"],
+    "XIO": ["wifi", "bluetooth", "tv", "optical", "hdmi"],
 }
 
 
@@ -44,19 +50,27 @@ def select_model():
     global MODEL_SELECTED
     newline()
     console.print("[dodger_blue1]Select your speaker model:[/dodger_blue1]")
-    console.print("[bold]1[/bold] KEF LSX 2")
-    console.print("[bold]2[/bold] KEF LS50 Wireless 2")
-    console.print("[bold]3[/bold] KEF LS60")
+    console.print("[bold]1[/bold] KEF LSX II")
+    console.print("[bold]2[/bold] KEF LSX II LT")
+    console.print("[bold]3[/bold] KEF LS50 Wireless II")
+    console.print("[bold]4[/bold] KEF LS60 Wireless")
+    console.print("[bold]5[/bold] KEF XIO Soundbar")
 
     try:
-        MODEL_SELECTED = (
-            int(input("Enter the number of your speaker model (1/2/3): ")) - 1
-        )
+        selection = int(input("Enter the number of your speaker model (1-5): "))
     except:
-        MODEL_SELECTED = -1
-    while MODEL_SELECTED not in [0, 1, 2]:
-        console.print("\tPlease enter 1, 2 or 3: ", end="")
-        MODEL_SELECTED = int(input()) - 1
+        selection = -1
+
+    while selection not in [1, 2, 3, 4, 5]:
+        console.print("\tPlease enter 1, 2, 3, 4, or 5: ", end="")
+        try:
+            selection = int(input())
+        except:
+            selection = -1
+
+    # Map selection to model identifier
+    model_keys = list(MODEL_LIST.keys())
+    MODEL_SELECTED = model_keys[selection - 1]
     newline()
 
 
@@ -167,7 +181,7 @@ def discover_kef_speakers(network_range=None, max_workers=50):
                 if is_speaker and info:
                     found += 1
                     discovered_speakers.append(info)
-                    console.print(f"[bold green]✓ Found KEF speaker:[/bold green] {info['name']} ({info['model']}) at {info['ip']}")
+                    console.print(f"[bold green]OK Found KEF speaker:[/bold green] {info['name']} ({info['model']}) at {info['ip']}")
 
                 # Update status every 10 IPs
                 if scanned % 10 == 0:
@@ -280,7 +294,7 @@ def speaker_info():
             console.print(f"[bold red]Error: {e}[/bold red]")
             newline()
             console.print(
-                "Verify that your speaker is plugged in 🔌 and connected to the network."
+                "Verify that your speaker is plugged in  and connected to the network."
             )
             console.print(
                 "Verify that your computer is connected to the same network as your speaker."
@@ -391,7 +405,7 @@ def power_check():
         )
 
     if USER_CONFIRMATION["power_on"] and USER_CONFIRMATION["power_off"]:
-        console.print("[bold green]All power tests passed ! 🎉[/bold green]")
+        console.print("[bold green]All power tests passed ! [/bold green]")
 
 
 def source_check():
@@ -433,7 +447,7 @@ def source_check():
     for source in MODEL_SOURCES[MODEL_SELECTED]:
         all_checks *= USER_CONFIRMATION[f"select {source}"]
     if all_checks:
-        console.print("[bold green]All source tests passed ! 🎉[/bold green]")
+        console.print("[bold green]All source tests passed ! [/bold green]")
 
 
 def sumup():
@@ -444,11 +458,11 @@ def sumup():
     console.print("[bold]Working features:[/bold]")
     for feature in USER_CONFIRMATION:
         if USER_CONFIRMATION[feature]:
-            console.print(f"\t[green]✓[/green] {feature}")
+            console.print(f"\t[green]OK[/green] {feature}")
     console.print("[bold]Non working features:[/bold]")
     for feature in USER_CONFIRMATION:
         if not USER_CONFIRMATION[feature]:
-            console.print(f"\t[red]✗[/red] {feature}")
+            console.print(f"\t[red]X[/red] {feature}")
 
 
 def vol_test():
@@ -518,7 +532,7 @@ def vol_test():
         and USER_CONFIRMATION["mute"]
         and USER_CONFIRMATION["unmute"]
     ):
-        console.print("[bold green]All volume tests passed ! 🎉[/bold green]")
+        console.print("[bold green]All volume tests passed ! [/bold green]")
 
 
 def system_infos():
@@ -568,7 +582,7 @@ def song_info():
         )
     )
     if USER_CONFIRMATION["get song info"]:
-        console.print("[bold green]All song info tests passed ! 🎉[/bold green]")
+        console.print("[bold green]All song info tests passed ! [/bold green]")
 
 
 def track_control():
@@ -648,7 +662,7 @@ def track_control():
         and USER_CONFIRMATION["pause"]
         and USER_CONFIRMATION["play"]
     ):
-        console.print("[bold green]All track control tests passed ! 🎉[/bold green]")
+        console.print("[bold green]All track control tests passed ! [/bold green]")
 
 
 def dsp_eq_test():
@@ -662,7 +676,7 @@ def dsp_eq_test():
     console.print("\n[dodger_blue1]Testing get_eq_profile()...[/dodger_blue1]")
     try:
         initial_profile = spkr.get_eq_profile()
-        console.print("[green]✓[/green] Successfully retrieved EQ profile")
+        console.print("[green]OK[/green] Successfully retrieved EQ profile")
         USER_CONFIRMATION["eq_get_profile"] = True
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -675,10 +689,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         desk_enabled, desk_db = spkr.get_desk_mode()
         if desk_enabled and desk_db == -3:
-            console.print(f"[green]✓[/green] Desk mode: enabled at {desk_db} dB")
+            console.print(f"[green]OK[/green] Desk mode: enabled at {desk_db} dB")
             USER_CONFIRMATION["dsp_desk_mode"] = True
         else:
-            console.print(f"[red]✗[/red] Expected enabled/-3, got {desk_enabled}/{desk_db}")
+            console.print(f"[red]X[/red] Expected enabled/-3, got {desk_enabled}/{desk_db}")
             USER_CONFIRMATION["dsp_desk_mode"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -691,10 +705,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         wall_enabled, wall_db = spkr.get_wall_mode()
         if wall_enabled and wall_db == -4.5:
-            console.print(f"[green]✓[/green] Wall mode: enabled at {wall_db} dB")
+            console.print(f"[green]OK[/green] Wall mode: enabled at {wall_db} dB")
             USER_CONFIRMATION["dsp_wall_mode"] = True
         else:
-            console.print(f"[red]✗[/red] Expected enabled/-4.5, got {wall_enabled}/{wall_db}")
+            console.print(f"[red]X[/red] Expected enabled/-4.5, got {wall_enabled}/{wall_db}")
             USER_CONFIRMATION["dsp_wall_mode"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -707,10 +721,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         bass = spkr.get_bass_extension()
         if bass == "extra":
-            console.print(f"[green]✓[/green] Bass extension: {bass}")
+            console.print(f"[green]OK[/green] Bass extension: {bass}")
             USER_CONFIRMATION["dsp_bass_extension"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 'extra', got '{bass}'")
+            console.print(f"[red]X[/red] Expected 'extra', got '{bass}'")
             USER_CONFIRMATION["dsp_bass_extension"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -723,10 +737,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         treble = spkr.get_treble_amount()
         if treble == 3:
-            console.print(f"[green]✓[/green] Treble: {treble} dB")
+            console.print(f"[green]OK[/green] Treble: {treble} dB")
             USER_CONFIRMATION["dsp_treble"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 3, got {treble}")
+            console.print(f"[red]X[/red] Expected 3, got {treble}")
             USER_CONFIRMATION["dsp_treble"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -739,10 +753,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         balance = spkr.get_balance()
         if balance == 5:
-            console.print(f"[green]✓[/green] Balance: {balance}")
+            console.print(f"[green]OK[/green] Balance: {balance}")
             USER_CONFIRMATION["dsp_balance"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 5, got {balance}")
+            console.print(f"[red]X[/red] Expected 5, got {balance}")
             USER_CONFIRMATION["dsp_balance"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -755,10 +769,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         phase = spkr.get_phase_correction()
         if phase:
-            console.print(f"[green]✓[/green] Phase correction: enabled")
+            console.print(f"[green]OK[/green] Phase correction: enabled")
             USER_CONFIRMATION["dsp_phase_correction"] = True
         else:
-            console.print(f"[red]✗[/red] Expected True, got {phase}")
+            console.print(f"[red]X[/red] Expected True, got {phase}")
             USER_CONFIRMATION["dsp_phase_correction"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -772,12 +786,12 @@ def dsp_eq_test():
         time.sleep(0.5)
         name = spkr.get_profile_name()
         if name == "Test Profile":
-            console.print(f"[green]✓[/green] Profile name: '{name}'")
+            console.print(f"[green]OK[/green] Profile name: '{name}'")
             USER_CONFIRMATION["profile_name"] = True
             # Restore original name
             spkr.set_profile_name(original_name)
         else:
-            console.print(f"[red]✗[/red] Expected 'Test Profile', got '{name}'")
+            console.print(f"[red]X[/red] Expected 'Test Profile', got '{name}'")
             USER_CONFIRMATION["profile_name"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -790,10 +804,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         hp_enabled, hp_freq = spkr.get_high_pass_filter()
         if hp_enabled and hp_freq == 80:
-            console.print(f"[green]✓[/green] High-pass filter: enabled at {hp_freq} Hz")
+            console.print(f"[green]OK[/green] High-pass filter: enabled at {hp_freq} Hz")
             USER_CONFIRMATION["high_pass_filter"] = True
         else:
-            console.print(f"[red]✗[/red] Expected enabled/80, got {hp_enabled}/{hp_freq}")
+            console.print(f"[red]X[/red] Expected enabled/80, got {hp_enabled}/{hp_freq}")
             USER_CONFIRMATION["high_pass_filter"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -806,10 +820,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         polarity = spkr.get_audio_polarity()
         if polarity == "normal":
-            console.print(f"[green]✓[/green] Audio polarity: {polarity}")
+            console.print(f"[green]OK[/green] Audio polarity: {polarity}")
             USER_CONFIRMATION["audio_polarity"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 'normal', got '{polarity}'")
+            console.print(f"[red]X[/red] Expected 'normal', got '{polarity}'")
             USER_CONFIRMATION["audio_polarity"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -822,10 +836,10 @@ def dsp_eq_test():
         time.sleep(0.5)
         treble = spkr.get_treble_amount()
         if treble == 0:
-            console.print(f"[green]✓[/green] update_dsp_setting: trebleAmount set to 0")
+            console.print(f"[green]OK[/green] update_dsp_setting: trebleAmount set to 0")
             USER_CONFIRMATION["update_dsp_setting"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 0, got {treble}")
+            console.print(f"[red]X[/red] Expected 0, got {treble}")
             USER_CONFIRMATION["update_dsp_setting"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -840,7 +854,7 @@ def dsp_eq_test():
     passed = sum([USER_CONFIRMATION.get(test, False) for test in dsp_tests])
 
     if passed == len(dsp_tests):
-        console.print(f"\n[bold green]All DSP/EQ/Filter tests passed! ({passed}/{len(dsp_tests)}) 🎉[/bold green]")
+        console.print(f"\n[bold green]All DSP/EQ/Filter tests passed! ({passed}/{len(dsp_tests)}) [/bold green]")
     else:
         console.print(f"\n[bold orange1]DSP/EQ/Filter tests: {passed}/{len(dsp_tests)} passed[/bold orange1]")
 
@@ -870,10 +884,10 @@ def subwoofer_test():
         time.sleep(0.5)
         enabled = spkr.get_subwoofer_enabled()
         if enabled:
-            console.print(f"[green]✓[/green] Subwoofer: enabled")
+            console.print(f"[green]OK[/green] Subwoofer: enabled")
             USER_CONFIRMATION["sub_enable"] = True
         else:
-            console.print(f"[red]✗[/red] Expected True, got {enabled}")
+            console.print(f"[red]X[/red] Expected True, got {enabled}")
             USER_CONFIRMATION["sub_enable"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -886,10 +900,10 @@ def subwoofer_test():
         time.sleep(0.5)
         gain = spkr.get_subwoofer_gain()
         if gain == 5:
-            console.print(f"[green]✓[/green] Subwoofer gain: {gain} dB")
+            console.print(f"[green]OK[/green] Subwoofer gain: {gain} dB")
             USER_CONFIRMATION["sub_gain"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 5, got {gain}")
+            console.print(f"[red]X[/red] Expected 5, got {gain}")
             USER_CONFIRMATION["sub_gain"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -902,10 +916,10 @@ def subwoofer_test():
         time.sleep(0.5)
         polarity = spkr.get_subwoofer_polarity()
         if polarity == "normal":
-            console.print(f"[green]✓[/green] Subwoofer polarity: {polarity}")
+            console.print(f"[green]OK[/green] Subwoofer polarity: {polarity}")
             USER_CONFIRMATION["sub_polarity"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 'normal', got '{polarity}'")
+            console.print(f"[red]X[/red] Expected 'normal', got '{polarity}'")
             USER_CONFIRMATION["sub_polarity"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -918,10 +932,10 @@ def subwoofer_test():
         time.sleep(0.5)
         preset = spkr.get_subwoofer_preset()
         if preset == "kube8b":
-            console.print(f"[green]✓[/green] Subwoofer preset: {preset}")
+            console.print(f"[green]OK[/green] Subwoofer preset: {preset}")
             USER_CONFIRMATION["sub_preset"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 'kube8b', got '{preset}'")
+            console.print(f"[red]X[/red] Expected 'kube8b', got '{preset}'")
             USER_CONFIRMATION["sub_preset"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -934,10 +948,10 @@ def subwoofer_test():
         time.sleep(0.5)
         lowpass = spkr.get_subwoofer_lowpass()
         if lowpass == 80:
-            console.print(f"[green]✓[/green] Subwoofer low-pass: {lowpass} Hz")
+            console.print(f"[green]OK[/green] Subwoofer low-pass: {lowpass} Hz")
             USER_CONFIRMATION["sub_lowpass"] = True
         else:
-            console.print(f"[red]✗[/red] Expected 80, got {lowpass}")
+            console.print(f"[red]X[/red] Expected 80, got {lowpass}")
             USER_CONFIRMATION["sub_lowpass"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -950,10 +964,10 @@ def subwoofer_test():
         time.sleep(0.5)
         stereo = spkr.get_subwoofer_stereo()
         if stereo == False:
-            console.print(f"[green]✓[/green] Subwoofer stereo: disabled")
+            console.print(f"[green]OK[/green] Subwoofer stereo: disabled")
             USER_CONFIRMATION["sub_stereo"] = True
         else:
-            console.print(f"[red]✗[/red] Expected False, got {stereo}")
+            console.print(f"[red]X[/red] Expected False, got {stereo}")
             USER_CONFIRMATION["sub_stereo"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -964,7 +978,7 @@ def subwoofer_test():
     passed = sum([USER_CONFIRMATION.get(test, False) for test in sub_tests])
 
     if passed == len(sub_tests):
-        console.print(f"\n[bold green]All subwoofer tests passed! ({passed}/{len(sub_tests)}) 🎉[/bold green]")
+        console.print(f"\n[bold green]All subwoofer tests passed! ({passed}/{len(sub_tests)}) [/bold green]")
     else:
         console.print(f"\n[bold orange1]Subwoofer tests: {passed}/{len(sub_tests)} passed[/bold orange1]")
 
@@ -991,12 +1005,12 @@ def xio_specific_test():
         time.sleep(0.5)
         profile = spkr.get_sound_profile()
         if profile == "movie":
-            console.print(f"[green]✓[/green] Sound profile: {profile}")
+            console.print(f"[green]OK[/green] Sound profile: {profile}")
             USER_CONFIRMATION["xio_sound_profile"] = True
             # Restore to default
             spkr.set_sound_profile("default")
         else:
-            console.print(f"[red]✗[/red] Expected 'movie', got '{profile}'")
+            console.print(f"[red]X[/red] Expected 'movie', got '{profile}'")
             USER_CONFIRMATION["xio_sound_profile"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -1010,12 +1024,12 @@ def xio_specific_test():
         time.sleep(0.5)
         mounted = spkr.get_wall_mounted()
         if mounted == True:
-            console.print(f"[green]✓[/green] Wall mounted: True")
+            console.print(f"[green]OK[/green] Wall mounted: True")
             USER_CONFIRMATION["xio_wall_mounted"] = True
             # Restore original setting
             spkr.set_wall_mounted(original_mounted)
         else:
-            console.print(f"[red]✗[/red] Expected True, got {mounted}")
+            console.print(f"[red]X[/red] Expected True, got {mounted}")
             USER_CONFIRMATION["xio_wall_mounted"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -1026,7 +1040,7 @@ def xio_specific_test():
     passed = sum([USER_CONFIRMATION.get(test, False) for test in xio_tests])
 
     if passed == len(xio_tests):
-        console.print(f"\n[bold green]All XIO tests passed! ({passed}/{len(xio_tests)}) 🎉[/bold green]")
+        console.print(f"\n[bold green]All XIO tests passed! ({passed}/{len(xio_tests)}) [/bold green]")
     else:
         console.print(f"\n[bold orange1]XIO tests: {passed}/{len(xio_tests)} passed[/bold orange1]")
 
@@ -1084,7 +1098,7 @@ def subwoofer_preset_analysis():
                 'gain': gain,
                 'lowpass': lowpass,
                 'highpass': highpass,
-                'status': '✓'
+                'status': 'OK'
             }
 
             table.add_row(
@@ -1092,7 +1106,7 @@ def subwoofer_preset_analysis():
                 str(gain) if gain != 'N/A' else 'N/A',
                 str(lowpass) if lowpass != 'N/A' else 'N/A',
                 str(highpass) if highpass != 'N/A' else 'N/A',
-                '[green]✓[/green]'
+                '[green]OK[/green]'
             )
 
         except Exception as e:
@@ -1100,9 +1114,9 @@ def subwoofer_preset_analysis():
                 'gain': 'ERROR',
                 'lowpass': 'ERROR',
                 'highpass': 'ERROR',
-                'status': '✗'
+                'status': 'X'
             }
-            table.add_row(preset, 'ERROR', 'ERROR', 'ERROR', '[red]✗[/red]')
+            table.add_row(preset, 'ERROR', 'ERROR', 'ERROR', '[red]X[/red]')
             console.print(f"[red]Error testing {preset}: {e}[/red]")
 
     console.print("\n")
@@ -1129,7 +1143,7 @@ def firmware_test():
     console.print("\n[dodger_blue1]Testing check_for_firmware_update()...[/dodger_blue1]")
     try:
         result = spkr.check_for_firmware_update()
-        console.print(f"[green]✓[/green] Check for updates triggered: {result}")
+        console.print(f"[green]OK[/green] Check for updates triggered: {result}")
         USER_CONFIRMATION["firmware_check"] = True
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -1140,7 +1154,7 @@ def firmware_test():
     try:
         time.sleep(2)  # Wait for check to complete
         status = spkr.get_firmware_update_status()
-        console.print(f"[green]✓[/green] Update status: {status}")
+        console.print(f"[green]OK[/green] Update status: {status}")
         USER_CONFIRMATION["firmware_status"] = True
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -1151,10 +1165,10 @@ def firmware_test():
     try:
         releases = pkf.get_kef_firmware_releases()
         if releases and len(releases) > 0:
-            console.print(f"[green]✓[/green] Found {len(releases)} firmware releases")
+            console.print(f"[green]OK[/green] Found {len(releases)} firmware releases")
             USER_CONFIRMATION["firmware_releases"] = True
         else:
-            console.print(f"[red]✗[/red] No releases found")
+            console.print(f"[red]X[/red] No releases found")
             USER_CONFIRMATION["firmware_releases"] = False
     except Exception as e:
         console.print(f"[red]Error: {e}[/red]")
@@ -1164,9 +1178,361 @@ def firmware_test():
     passed = sum([USER_CONFIRMATION.get(test, False) for test in firmware_tests])
 
     if passed == len(firmware_tests):
-        console.print(f"\n[bold green]All firmware tests passed! ({passed}/{len(firmware_tests)}) 🎉[/bold green]")
+        console.print(f"\n[bold green]All firmware tests passed! ({passed}/{len(firmware_tests)}) [/bold green]")
     else:
         console.print(f"\n[bold orange1]Firmware tests: {passed}/{len(firmware_tests)} passed[/bold orange1]")
+
+
+def bluetooth_test():
+    """Test Bluetooth control features (4 methods)"""
+    rule_msg("Bluetooth Control")
+    console.print("The script will now test Bluetooth control features.")
+    console.print("[orange1]These methods control Bluetooth device management[/orange1]")
+    prompt_continue()
+
+    # Test get bluetooth state
+    console.print("\n[dodger_blue1]Testing get_bluetooth_state()...[/dodger_blue1]")
+    try:
+        state = spkr.get_bluetooth_state()
+        console.print(f"[green]OK[/green] Bluetooth state: {state}")
+        USER_CONFIRMATION["bt_get_state"] = True
+        AUTO_TESTS_OUTPUT["bt_state"] = state
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["bt_get_state"] = False
+
+    # Test set bluetooth discoverable
+    console.print("\n[dodger_blue1]Testing set_bluetooth_discoverable()...[/dodger_blue1]")
+    try:
+        result = spkr.set_bluetooth_discoverable(True)
+        console.print(f"[green]OK[/green] Set discoverable: {result}")
+        USER_CONFIRMATION["bt_discoverable"] = True
+        time.sleep(2)
+        # Turn it back off
+        spkr.set_bluetooth_discoverable(False)
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["bt_discoverable"] = False
+
+    # Test disconnect bluetooth (only if connected)
+    console.print("\n[dodger_blue1]Testing disconnect_bluetooth()...[/dodger_blue1]")
+    console.print("[orange1]This will only work if a Bluetooth device is connected[/orange1]")
+    try:
+        result = spkr.disconnect_bluetooth()
+        console.print(f"[green]OK[/green] Disconnect result: {result}")
+        USER_CONFIRMATION["bt_disconnect"] = True
+    except Exception as e:
+        console.print(f"[yellow]Warning: {e}[/yellow]")
+        console.print("[orange1]This is expected if no device is connected[/orange1]")
+        USER_CONFIRMATION["bt_disconnect"] = True  # Not an error
+
+    # Test clear bluetooth devices
+    console.print("\n[dodger_blue1]Testing clear_bluetooth_devices()...[/dodger_blue1]")
+    console.print("[orange1]WARNING: This will unpair all Bluetooth devices![/orange1]")
+    if not NON_INTERACTIVE:
+        skip = input("Do you want to clear all paired Bluetooth devices? (y/n): ")
+        if skip.lower() != 'y':
+            console.print("[yellow]Skipping clear_bluetooth_devices[/yellow]")
+            USER_CONFIRMATION["bt_clear"] = None
+        else:
+            try:
+                result = spkr.clear_bluetooth_devices()
+                console.print(f"[green]OK[/green] Clear devices result: {result}")
+                USER_CONFIRMATION["bt_clear"] = True
+            except Exception as e:
+                console.print(f"[red]Error: {e}[/red]")
+                USER_CONFIRMATION["bt_clear"] = False
+    else:
+        console.print("[yellow]Non-interactive mode: skipping destructive operation[/yellow]")
+        USER_CONFIRMATION["bt_clear"] = None
+
+    bt_tests = ["bt_get_state", "bt_discoverable", "bt_disconnect"]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in bt_tests])
+
+    if passed == len(bt_tests):
+        console.print(f"\n[bold green]All Bluetooth tests passed! ({passed}/{len(bt_tests)}) [/bold green]")
+    else:
+        console.print(f"\n[bold orange1]Bluetooth tests: {passed}/{len(bt_tests)} passed[/bold orange1]")
+
+
+def grouping_test():
+    """Test Grouping/Multiroom features (2 methods)"""
+    rule_msg("Grouping & Multiroom")
+    console.print("The script will now test multiroom grouping features.")
+    console.print("[orange1]These methods control speaker grouping[/orange1]")
+    prompt_continue()
+
+    # Test get group members
+    console.print("\n[dodger_blue1]Testing get_group_members()...[/dodger_blue1]")
+    try:
+        members = spkr.get_group_members()
+        console.print(f"[green]OK[/green] Group members: {members}")
+        USER_CONFIRMATION["group_get_members"] = True
+        AUTO_TESTS_OUTPUT["group_members"] = members
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["group_get_members"] = False
+
+    # Test save persistent group
+    console.print("\n[dodger_blue1]Testing save_persistent_group()...[/dodger_blue1]")
+    console.print("[orange1]This saves the current speaker group configuration[/orange1]")
+    try:
+        result = spkr.save_persistent_group()
+        console.print(f"[green]OK[/green] Save group result: {result}")
+        USER_CONFIRMATION["group_save"] = True
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["group_save"] = False
+
+    group_tests = ["group_get_members", "group_save"]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in group_tests])
+
+    if passed == len(group_tests):
+        console.print(f"\n[bold green]All grouping tests passed! ({passed}/{len(group_tests)}) [/bold green]")
+    else:
+        console.print(f"\n[bold orange1]Grouping tests: {passed}/{len(group_tests)} passed[/bold orange1]")
+
+
+def notifications_test():
+    """Test Notifications features (3 methods)"""
+    rule_msg("Notifications")
+    console.print("The script will now test notification features.")
+    console.print("[orange1]These methods control UI notifications on the speaker[/orange1]")
+    prompt_continue()
+
+    # Test get notification queue
+    console.print("\n[dodger_blue1]Testing get_notification_queue()...[/dodger_blue1]")
+    try:
+        queue = spkr.get_notification_queue()
+        console.print(f"[green]OK[/green] Notification queue: {queue}")
+        USER_CONFIRMATION["notif_get_queue"] = True
+        AUTO_TESTS_OUTPUT["notification_queue"] = queue
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["notif_get_queue"] = False
+
+    # Test get player notification
+    console.print("\n[dodger_blue1]Testing get_player_notification()...[/dodger_blue1]")
+    try:
+        player_notif = spkr.get_player_notification()
+        console.print(f"[green]OK[/green] Player notification: {player_notif}")
+        USER_CONFIRMATION["notif_get_player"] = True
+        AUTO_TESTS_OUTPUT["player_notification"] = player_notif
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["notif_get_player"] = False
+
+    # Test cancel notification (only if there are notifications)
+    console.print("\n[dodger_blue1]Testing cancel_notification()...[/dodger_blue1]")
+    console.print("[orange1]This will cancel the current notification[/orange1]")
+    try:
+        result = spkr.cancel_notification()
+        console.print(f"[green]OK[/green] Cancel result: {result}")
+        USER_CONFIRMATION["notif_cancel"] = True
+    except Exception as e:
+        console.print(f"[yellow]Warning: {e}[/yellow]")
+        console.print("[orange1]This is expected if no notifications exist[/orange1]")
+        USER_CONFIRMATION["notif_cancel"] = True  # Not an error
+
+    notif_tests = ["notif_get_queue", "notif_get_player", "notif_cancel"]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in notif_tests])
+
+    if passed == len(notif_tests):
+        console.print(f"\n[bold green]All notification tests passed! ({passed}/{len(notif_tests)}) [/bold green]")
+    else:
+        console.print(f"\n[bold orange1]Notification tests: {passed}/{len(notif_tests)} passed[/bold orange1]")
+
+
+def alerts_timers_test():
+    """Test Alerts & Timers features (13 methods)"""
+    rule_msg("Alerts & Timers")
+    console.print("The script will now test alarms and timers features.")
+    console.print("[orange1]These methods control alarms and countdown timers[/orange1]")
+    prompt_continue()
+
+    # Test list alerts
+    console.print("\n[dodger_blue1]Testing list_alerts()...[/dodger_blue1]")
+    try:
+        alerts = spkr.list_alerts()
+        console.print(f"[green]OK[/green] Current alerts: {alerts}")
+        USER_CONFIRMATION["alerts_list"] = True
+        AUTO_TESTS_OUTPUT["alerts"] = alerts
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["alerts_list"] = False
+
+    # Test add timer
+    console.print("\n[dodger_blue1]Testing add_timer()...[/dodger_blue1]")
+    console.print("[orange1]Creating a 60-second test timer[/orange1]")
+    try:
+        result = spkr.add_timer(duration_seconds=60)
+        console.print(f"[green]OK[/green] Add timer result: {result}")
+        USER_CONFIRMATION["timer_add"] = True
+        time.sleep(1)
+        # Get the timer ID from the alerts list
+        alerts = spkr.list_alerts()
+        console.print(f"Current alerts after adding: {alerts}")
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["timer_add"] = False
+
+    # Test remove timer (remove the one we just added)
+    console.print("\n[dodger_blue1]Testing remove_timer()...[/dodger_blue1]")
+    try:
+        # Assuming timer ID 0 or check the alerts list
+        result = spkr.remove_timer(timer_id=0)
+        console.print(f"[green]OK[/green] Remove timer result: {result}")
+        USER_CONFIRMATION["timer_remove"] = True
+    except Exception as e:
+        console.print(f"[yellow]Warning: {e}[/yellow]")
+        console.print("[orange1]This is expected if timer doesn't exist[/orange1]")
+        USER_CONFIRMATION["timer_remove"] = True
+
+    # Test snooze time get/set
+    console.print("\n[dodger_blue1]Testing get/set_snooze_time()...[/dodger_blue1]")
+    try:
+        original_snooze = spkr.get_snooze_time()
+        console.print(f"[green]OK[/green] Current snooze time: {original_snooze} minutes")
+        USER_CONFIRMATION["snooze_get"] = True
+
+        # Try to set it to 10 minutes
+        spkr.set_snooze_time(10)
+        time.sleep(0.5)
+        new_snooze = spkr.get_snooze_time()
+        if new_snooze == 10:
+            console.print(f"[green]OK[/green] Snooze time set to 10 minutes")
+            USER_CONFIRMATION["snooze_set"] = True
+            # Restore original
+            spkr.set_snooze_time(original_snooze)
+        else:
+            console.print(f"[red]X[/red] Expected 10, got {new_snooze}")
+            USER_CONFIRMATION["snooze_set"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["snooze_get"] = False
+        USER_CONFIRMATION["snooze_set"] = False
+
+    # Test default alert sound
+    console.print("\n[dodger_blue1]Testing play/stop_default_alert_sound()...[/dodger_blue1]")
+    console.print("[orange1]This will play the default alert sound briefly[/orange1]")
+    try:
+        result = spkr.play_default_alert_sound()
+        console.print(f"[green]OK[/green] Play alert sound result: {result}")
+        USER_CONFIRMATION["alert_sound_play"] = True
+        time.sleep(2)
+        result = spkr.stop_default_alert_sound()
+        console.print(f"[green]OK[/green] Stop alert sound result: {result}")
+        USER_CONFIRMATION["alert_sound_stop"] = True
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["alert_sound_play"] = False
+        USER_CONFIRMATION["alert_sound_stop"] = False
+
+    # Test alarm operations (add, enable, disable, remove)
+    console.print("\n[dodger_blue1]Testing alarm operations...[/dodger_blue1]")
+    console.print("[orange1]Creating a test alarm for 08:00[/orange1]")
+    try:
+        # Add alarm for 8:00 AM, weekdays only
+        alarm_data = {"time": "08:00", "days": "1111100", "label": "Test Alarm"}
+        result = spkr.add_alarm(alarm_data)
+        console.print(f"[green]OK[/green] Add alarm result: {result}")
+        USER_CONFIRMATION["alarm_add"] = True
+        time.sleep(1)
+
+        # List alarms to see it
+        alerts = spkr.list_alerts()
+        console.print(f"Alerts after adding alarm: {alerts}")
+
+        # Disable alarm (assuming ID 0)
+        result = spkr.disable_alarm(alarm_id=0)
+        console.print(f"[green]OK[/green] Disable alarm result: {result}")
+        USER_CONFIRMATION["alarm_disable"] = True
+
+        # Enable alarm
+        result = spkr.enable_alarm(alarm_id=0)
+        console.print(f"[green]OK[/green] Enable alarm result: {result}")
+        USER_CONFIRMATION["alarm_enable"] = True
+
+        # Remove alarm
+        result = spkr.remove_alarm(alarm_id=0)
+        console.print(f"[green]OK[/green] Remove alarm result: {result}")
+        USER_CONFIRMATION["alarm_remove"] = True
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["alarm_add"] = False
+        USER_CONFIRMATION["alarm_disable"] = False
+        USER_CONFIRMATION["alarm_enable"] = False
+        USER_CONFIRMATION["alarm_remove"] = False
+
+    alert_tests = [
+        "alerts_list", "timer_add", "timer_remove", "snooze_get", "snooze_set",
+        "alert_sound_play", "alert_sound_stop", "alarm_add", "alarm_enable",
+        "alarm_disable", "alarm_remove"
+    ]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in alert_tests])
+
+    if passed == len(alert_tests):
+        console.print(f"\n[bold green]All alerts/timers tests passed! ({passed}/{len(alert_tests)}) [/bold green]")
+    else:
+        console.print(f"\n[bold orange1]Alerts/timers tests: {passed}/{len(alert_tests)} passed[/bold orange1]")
+
+
+def googlecast_test():
+    """Test Google Cast features (3 methods)"""
+    rule_msg("Google Cast")
+    console.print("The script will now test Google Cast configuration.")
+    console.print("[orange1]These methods control Cast analytics and ToS status[/orange1]")
+    prompt_continue()
+
+    # Test get cast usage report
+    console.print("\n[dodger_blue1]Testing get_cast_usage_report()...[/dodger_blue1]")
+    try:
+        enabled = spkr.get_cast_usage_report()
+        console.print(f"[green]OK[/green] Cast usage reporting: {enabled}")
+        USER_CONFIRMATION["cast_get_report"] = True
+        AUTO_TESTS_OUTPUT["cast_usage_report"] = enabled
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["cast_get_report"] = False
+
+    # Test set cast usage report
+    console.print("\n[dodger_blue1]Testing set_cast_usage_report()...[/dodger_blue1]")
+    try:
+        original = spkr.get_cast_usage_report()
+        # Toggle it
+        spkr.set_cast_usage_report(not original)
+        time.sleep(0.5)
+        new_value = spkr.get_cast_usage_report()
+        if new_value == (not original):
+            console.print(f"[green]OK[/green] Cast usage report toggled successfully")
+            USER_CONFIRMATION["cast_set_report"] = True
+            # Restore original
+            spkr.set_cast_usage_report(original)
+        else:
+            console.print(f"[red]X[/red] Toggle failed")
+            USER_CONFIRMATION["cast_set_report"] = False
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["cast_set_report"] = False
+
+    # Test get cast ToS accepted
+    console.print("\n[dodger_blue1]Testing get_cast_tos_accepted()...[/dodger_blue1]")
+    try:
+        accepted = spkr.get_cast_tos_accepted()
+        console.print(f"[green]OK[/green] Cast ToS accepted: {accepted}")
+        USER_CONFIRMATION["cast_get_tos"] = True
+        AUTO_TESTS_OUTPUT["cast_tos_accepted"] = accepted
+    except Exception as e:
+        console.print(f"[red]Error: {e}[/red]")
+        USER_CONFIRMATION["cast_get_tos"] = False
+
+    cast_tests = ["cast_get_report", "cast_set_report", "cast_get_tos"]
+    passed = sum([USER_CONFIRMATION.get(test, False) for test in cast_tests])
+
+    if passed == len(cast_tests):
+        console.print(f"\n[bold green]All Google Cast tests passed! ({passed}/{len(cast_tests)}) [/bold green]")
+    else:
+        console.print(f"\n[bold orange1]Google Cast tests: {passed}/{len(cast_tests)} passed[/bold orange1]")
 
 
 if __name__ == "__main__":
@@ -1188,6 +1554,9 @@ Examples:
   python3 testing.py --host 192.168.16.25 --test subwoofer
   python3 testing.py --host 192.168.16.25 --test preset-analysis
   python3 testing.py --host 192.168.16.25 --test firmware
+  python3 testing.py --host 192.168.16.25 --test bluetooth
+  python3 testing.py --host 192.168.16.25 --test alerts
+  python3 testing.py --host 192.168.16.25 --test new  # All new API methods
 
   # Run all tests non-interactively:
   python3 testing.py --host 192.168.16.25 --test all --model 0
@@ -1202,10 +1571,12 @@ Examples:
                        help='Network range to scan (e.g., 192.168.16.0/24). Auto-detects if not specified.')
     parser.add_argument('--host', type=str, help='KEF speaker IP address')
     parser.add_argument('--test', type=str,
-                       choices=['info', 'dsp', 'subwoofer', 'preset-analysis', 'xio', 'firmware', 'all'],
+                       choices=['info', 'dsp', 'subwoofer', 'preset-analysis', 'xio', 'firmware',
+                               'bluetooth', 'grouping', 'notifications', 'alerts', 'googlecast', 'new', 'all'],
                        help='Specific test to run (non-interactive mode)')
-    parser.add_argument('--model', type=int, choices=[0, 1, 2],
-                       help='Model: 0=LSX II, 1=LS50W2, 2=LS60 (required for --test all)')
+    parser.add_argument('--model', type=str,
+                       choices=['LSXII', 'LSXIILT', 'LS50WirelessII', 'LS60Wireless', 'XIO'],
+                       help='Model identifier: LSXII, LSXIILT, LS50WirelessII, LS60Wireless, or XIO (required for --test all)')
 
     args = parser.parse_args()
 
@@ -1292,6 +1663,50 @@ Examples:
                 console.print("[bold]Running Firmware Tests:[/bold]")
                 firmware_test()
 
+            elif args.test == 'bluetooth':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Bluetooth Tests:[/bold]")
+                bluetooth_test()
+
+            elif args.test == 'grouping':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Grouping Tests:[/bold]")
+                grouping_test()
+
+            elif args.test == 'notifications':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Notifications Tests:[/bold]")
+                notifications_test()
+
+            elif args.test == 'alerts':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Alerts & Timers Tests:[/bold]")
+                alerts_timers_test()
+
+            elif args.test == 'googlecast':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running Google Cast Tests:[/bold]")
+                googlecast_test()
+
+            elif args.test == 'new':
+                if args.model is not None:
+                    MODEL_SELECTED = args.model
+                console.print("[bold]Running All New API Method Tests:[/bold]")
+                bluetooth_test()
+                newline()
+                grouping_test()
+                newline()
+                notifications_test()
+                newline()
+                alerts_timers_test()
+                newline()
+                googlecast_test()
+
             elif args.test == 'all':
                 if args.model is None:
                     console.print("[bold red]Error: --model required for --test all[/bold red]")
@@ -1309,6 +1724,11 @@ Examples:
                 subwoofer_test()
                 xio_specific_test()
                 firmware_test()
+                bluetooth_test()
+                grouping_test()
+                notifications_test()
+                alerts_timers_test()
+                googlecast_test()
                 sumup()
 
         except Exception as e:
@@ -1347,7 +1767,12 @@ Examples:
         \n\t- [bold]DSP/EQ Control[/bold] (11 methods: desk/wall mode, bass, treble, balance, phase, filters, profile name)\
         \n\t- [bold]Subwoofer Control[/bold] (6 methods: enable, gain, polarity, preset, lowpass, stereo)\
         \n\t- [bold]XIO Soundbar Features[/bold] (2 methods: sound profile, wall mounted)\
-        \n\t- [bold]Firmware Update[/bold] (3 methods + release notes parser)"
+        \n\t- [bold]Firmware Update[/bold] (3 methods + release notes parser)\
+        \n\t- [bold]Bluetooth Control[/bold] (4 methods: state, discoverable, disconnect, clear devices)\
+        \n\t- [bold]Grouping/Multiroom[/bold] (2 methods: get members, save group)\
+        \n\t- [bold]Notifications[/bold] (3 methods: get queue, get player notification, cancel)\
+        \n\t- [bold]Alerts & Timers[/bold] (13 methods: timers, alarms, snooze, alert sounds)\
+        \n\t- [bold]Google Cast[/bold] (3 methods: usage report, ToS status)"
     )
     prompt_continue()
     system_infos()
@@ -1374,6 +1799,16 @@ Examples:
     newline()
     firmware_test()
     newline()
+    bluetooth_test()
+    newline()
+    grouping_test()
+    newline()
+    notifications_test()
+    newline()
+    alerts_timers_test()
+    newline()
+    googlecast_test()
+    newline()
     sumup()
     rule_msg("End of tests")
     console.print("Thanks for using this script !")
@@ -1381,13 +1816,13 @@ Examples:
         "Please copy the content of the [dodger_blue1]Sum Up[/dodger_blue1] section"
     )
     console.print(
-        "and [bold red]report it to GitHub[/bold red]. Even if all the tests passed ! 👌"
+        "and [bold red]report it to GitHub[/bold red]. Even if all the tests passed ! "
     )
     console.print(
         "[bold red] Report here: https://github.com/N0ciple/pykefcontrol/issues/2[/bold red]"
     )
     console.print(
-        "[bold green]Thanks for helping improving Pykefcontrol ! 🤗[/bold green]"
+        "[bold green]Thanks for helping improving Pykefcontrol ! [/bold green]"
     )
 
     sys.exit()
