@@ -516,29 +516,34 @@ From complete JADX decompilation of KEF Connect v1.26.1 APK (`ApiPath.java`):
 **Network Management (2 methods)**
 - WiFi scanning and activation
 
-### ⚠️ Not Yet Implemented (~30 Endpoints)
+**Bluetooth Control (4 methods)** - NEW!
+- `get_bluetooth_state`, `disconnect_bluetooth`, `set_bluetooth_discoverable`, `clear_bluetooth_devices`
+
+**Grouping/Multiroom (2 methods)** - NEW!
+- `get_group_members`, `save_persistent_group`
+
+**Notifications (3 methods)** - NEW!
+- `get_notification_queue`, `cancel_notification`, `get_player_notification`
+
+**Alerts & Timers (13 methods)** - NEW!
+- `list_alerts`, `add_timer`, `remove_timer`, `add_alarm`, `remove_alarm`
+- `enable_alarm`, `disable_alarm`, `remove_all_alarms`, `stop_alert`, `snooze_alarm`
+- `get/set_snooze_time`, `play_default_alert_sound`, `stop_default_alert_sound`
+
+**Google Cast (3 methods)** - NEW!
+- `get/set_cast_usage_report`, `get_cast_tos_accepted`
+
+**Total Methods:** 188 (163 + 25 new methods)
+
+### ⚠️ Not Yet Implemented (~5 Endpoints)
 
 **Player Control (5 paths)** - Some return 500 errors, use polling instead
 - `player:volume`, `player:player/control`, `player:player/data`, etc.
-
-**Alerts & Timers (13 paths)** - Alarm/timer management
-- `alerts:/list`, `alerts:/timer/add`, `alerts:/alarm/add`, etc.
-
-**Bluetooth Control (4 paths)** - BT device management
-- `bluetooth:state`, `bluetooth:disconnect`, `bluetooth:externalDiscoverable`, etc.
-
-**Grouping/Multiroom (2 paths)** - Multi-speaker synchronization
-- `grouping:members`, `grouping:savePersistentGroup`
-
-**Notifications (3 paths)** - UI notification system
-- `notifications:/display/queue`, `notifications:/display/cancel`, etc.
-
-**Google Cast (3 paths)** - Cast operation paths (settings paths implemented)
-- `googlecast:usageReport`, `googlecast:setUsageReport`
+- Note: Playback control already implemented via different paths
 
 **Power Management (3 paths)** - Direct power control paths
 - `powermanager:target`, `powermanager:targetRequest`, `powermanager:goReboot`
-- Note: Power on/shutdown implemented via different endpoints
+- Note: Power on/shutdown already implemented via different endpoints
 
 See [apk_analysis.md](apk_analysis.md) for complete API documentation and feature analysis.
 

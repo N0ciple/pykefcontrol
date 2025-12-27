@@ -2179,6 +2179,63 @@ class KefConnector:
         ) as response:
             json_output = response.json()
 
+    # Google Cast Methods
+    def get_cast_usage_report(self):
+        """Get Google Cast usage report setting.
+
+        Returns:
+            dict: Cast usage report status
+
+        Example:
+            report = speaker.get_cast_usage_report()
+        """
+        payload = {
+            "path": "googlecast:usageReport",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def set_cast_usage_report(self, enabled):
+        """Set Google Cast usage report.
+
+        Args:
+            enabled (bool): True to enable usage reporting
+
+        Example:
+            speaker.set_cast_usage_report(False)
+        """
+        payload = {
+            "path": "googlecast:setUsageReport",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def get_cast_tos_accepted(self):
+        """Get Google Cast Terms of Service acceptance status.
+
+        Returns:
+            bool: True if ToS accepted
+
+        Example:
+            accepted = speaker.get_cast_tos_accepted()
+        """
+        payload = {
+            "path": "settings:/googlecast/tosAccepted",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+            return json_output[0].get("bool_", False)
+
     # ================== Advanced Operations ==================
 
     def get_speaker_location(self):
@@ -2322,6 +2379,406 @@ class KefConnector:
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
             json_output = response.json()
+
+    # Bluetooth Control Methods
+    def get_bluetooth_state(self):
+        """Get Bluetooth connection state.
+
+        Returns:
+            dict: Bluetooth state information
+
+        Example:
+            state = speaker.get_bluetooth_state()
+        """
+        payload = {
+            "path": "bluetooth:state",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def disconnect_bluetooth(self):
+        """Disconnect current Bluetooth device.
+
+        Example:
+            speaker.disconnect_bluetooth()
+        """
+        payload = {
+            "path": "bluetooth:disconnect",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def set_bluetooth_discoverable(self, enabled):
+        """Set Bluetooth discoverability.
+
+        Args:
+            enabled (bool): True to make speaker discoverable
+
+        Example:
+            speaker.set_bluetooth_discoverable(True)
+        """
+        payload = {
+            "path": "bluetooth:externalDiscoverable",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def clear_bluetooth_devices(self):
+        """Clear all paired Bluetooth devices.
+
+        Example:
+            speaker.clear_bluetooth_devices()
+        """
+        payload = {
+            "path": "bluetooth:clearAllDevices",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    # Grouping/Multiroom Methods
+    def get_group_members(self):
+        """Get current multiroom group members.
+
+        Returns:
+            dict: Group member information
+
+        Example:
+            members = speaker.get_group_members()
+        """
+        payload = {
+            "path": "grouping:members",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def save_persistent_group(self):
+        """Save current group as persistent group.
+
+        Example:
+            speaker.save_persistent_group()
+        """
+        payload = {
+            "path": "grouping:savePersistentGroup",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    # Notifications Methods
+    def get_notification_queue(self):
+        """Get notification display queue.
+
+        Returns:
+            dict: Notification queue information
+
+        Example:
+            queue = speaker.get_notification_queue()
+        """
+        payload = {
+            "path": "notifications:/display/queue",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def cancel_notification(self):
+        """Cancel current notification.
+
+        Example:
+            speaker.cancel_notification()
+        """
+        payload = {
+            "path": "notifications:/display/cancel",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def get_player_notification(self):
+        """Get player notification status.
+
+        Returns:
+            dict: Player notification information
+
+        Example:
+            notification = speaker.get_player_notification()
+        """
+        payload = {
+            "path": "notifications:/player/playing",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    # Alerts & Timers Methods
+    def list_alerts(self):
+        """Get list of all alarms and timers.
+
+        Returns:
+            dict: List of alerts (alarms and timers)
+
+        Example:
+            alerts = speaker.list_alerts()
+        """
+        payload = {
+            "path": "alerts:/list",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def add_timer(self, duration_seconds):
+        """Add a timer.
+
+        Args:
+            duration_seconds (int): Timer duration in seconds
+
+        Example:
+            speaker.add_timer(300)  # 5 minute timer
+        """
+        payload = {
+            "path": "alerts:/timer/add",
+            "roles": "value",
+            "value": f'{{"type":"i32_","i32_":{duration_seconds}}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def remove_timer(self, timer_id):
+        """Remove a timer.
+
+        Args:
+            timer_id (str): Timer ID to remove
+
+        Example:
+            speaker.remove_timer("timer_123")
+        """
+        payload = {
+            "path": "alerts:/timer/remove",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{timer_id}"}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def add_alarm(self, alarm_data):
+        """Add an alarm.
+
+        Args:
+            alarm_data (dict): Alarm configuration (time, days, etc.)
+
+        Example:
+            speaker.add_alarm({"time": "07:00", "days": ["mon", "tue", "wed"]})
+        """
+        payload = {
+            "path": "alerts:/alarm/add",
+            "roles": "value",
+            "value": json.dumps(alarm_data),
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def remove_alarm(self, alarm_id):
+        """Remove an alarm.
+
+        Args:
+            alarm_id (str): Alarm ID to remove
+
+        Example:
+            speaker.remove_alarm("alarm_123")
+        """
+        payload = {
+            "path": "alerts:/alarm/remove",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{alarm_id}"}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def enable_alarm(self, alarm_id):
+        """Enable an alarm.
+
+        Args:
+            alarm_id (str): Alarm ID to enable
+
+        Example:
+            speaker.enable_alarm("alarm_123")
+        """
+        payload = {
+            "path": "alerts:/alarm/enable",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{alarm_id}"}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def disable_alarm(self, alarm_id):
+        """Disable an alarm.
+
+        Args:
+            alarm_id (str): Alarm ID to disable
+
+        Example:
+            speaker.disable_alarm("alarm_123")
+        """
+        payload = {
+            "path": "alerts:/alarm/disable",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{alarm_id}"}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def remove_all_alarms(self):
+        """Remove all alarms.
+
+        Example:
+            speaker.remove_all_alarms()
+        """
+        payload = {
+            "path": "alerts:/alarm/remove/all",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def stop_alert(self):
+        """Stop currently playing alert (alarm or timer).
+
+        Example:
+            speaker.stop_alert()
+        """
+        payload = {
+            "path": "alerts:/stop",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def snooze_alarm(self):
+        """Snooze currently playing alarm.
+
+        Example:
+            speaker.snooze_alarm()
+        """
+        payload = {
+            "path": "alerts:/alarm/snooze",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def get_snooze_time(self):
+        """Get snooze duration setting.
+
+        Returns:
+            int: Snooze time in minutes
+
+        Example:
+            minutes = speaker.get_snooze_time()
+        """
+        payload = {
+            "path": "settings:/alerts/snoozeTime",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+            return json_output[0].get("i32_", 10)
+
+    def set_snooze_time(self, minutes):
+        """Set snooze duration.
+
+        Args:
+            minutes (int): Snooze duration in minutes
+
+        Example:
+            speaker.set_snooze_time(10)
+        """
+        payload = {
+            "path": "settings:/alerts/snoozeTime",
+            "roles": "value",
+            "value": f'{{"type":"i32_","i32_":{minutes}}}',
+        }
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            return response.json()
+
+    def play_default_alert_sound(self):
+        """Play default alert sound.
+
+        Example:
+            speaker.play_default_alert_sound()
+        """
+        payload = {
+            "path": "alerts:/defaultSound/play",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
+
+    def stop_default_alert_sound(self):
+        """Stop default alert sound.
+
+        Example:
+            speaker.stop_default_alert_sound()
+        """
+        payload = {
+            "path": "alerts:/defaultSound/stop",
+            "roles": "value",
+        }
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            return response.json()
 
     def _get_player_data(self):
         """
@@ -5630,6 +6087,386 @@ class KefAsyncConnector:
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
             json_output = await response.json()
+
+    # Bluetooth Control Methods (Async)
+    async def get_bluetooth_state(self):
+        """Get Bluetooth connection state.
+
+        Returns:
+            dict: Bluetooth state information
+
+        Example:
+            state = await speaker.get_bluetooth_state()
+        """
+        payload = {"path": "bluetooth:state", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def disconnect_bluetooth(self):
+        """Disconnect current Bluetooth device.
+
+        Example:
+            await speaker.disconnect_bluetooth()
+        """
+        payload = {"path": "bluetooth:disconnect", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def set_bluetooth_discoverable(self, enabled):
+        """Set Bluetooth discoverability.
+
+        Args:
+            enabled (bool): True to make speaker discoverable
+
+        Example:
+            await speaker.set_bluetooth_discoverable(True)
+        """
+        payload = {
+            "path": "bluetooth:externalDiscoverable",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def clear_bluetooth_devices(self):
+        """Clear all paired Bluetooth devices.
+
+        Example:
+            await speaker.clear_bluetooth_devices()
+        """
+        payload = {"path": "bluetooth:clearAllDevices", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    # Grouping/Multiroom Methods (Async)
+    async def get_group_members(self):
+        """Get current multiroom group members.
+
+        Returns:
+            dict: Group member information
+
+        Example:
+            members = await speaker.get_group_members()
+        """
+        payload = {"path": "grouping:members", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def save_persistent_group(self):
+        """Save current group as persistent group.
+
+        Example:
+            await speaker.save_persistent_group()
+        """
+        payload = {"path": "grouping:savePersistentGroup", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    # Notifications Methods (Async)
+    async def get_notification_queue(self):
+        """Get notification display queue.
+
+        Returns:
+            dict: Notification queue information
+
+        Example:
+            queue = await speaker.get_notification_queue()
+        """
+        payload = {"path": "notifications:/display/queue", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def cancel_notification(self):
+        """Cancel current notification.
+
+        Example:
+            await speaker.cancel_notification()
+        """
+        payload = {"path": "notifications:/display/cancel", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def get_player_notification(self):
+        """Get player notification status.
+
+        Returns:
+            dict: Player notification information
+
+        Example:
+            notification = await speaker.get_player_notification()
+        """
+        payload = {"path": "notifications:/player/playing", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    # Alerts & Timers Methods (Async)
+    async def list_alerts(self):
+        """Get list of all alarms and timers.
+
+        Returns:
+            dict: List of alerts (alarms and timers)
+
+        Example:
+            alerts = await speaker.list_alerts()
+        """
+        payload = {"path": "alerts:/list", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def add_timer(self, duration_seconds):
+        """Add a timer.
+
+        Args:
+            duration_seconds (int): Timer duration in seconds
+
+        Example:
+            await speaker.add_timer(300)  # 5 minute timer
+        """
+        payload = {
+            "path": "alerts:/timer/add",
+            "roles": "value",
+            "value": f'{{"type":"i32_","i32_":{duration_seconds}}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def remove_timer(self, timer_id):
+        """Remove a timer.
+
+        Args:
+            timer_id (str): Timer ID to remove
+
+        Example:
+            await speaker.remove_timer("timer_123")
+        """
+        payload = {
+            "path": "alerts:/timer/remove",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{timer_id}"}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def add_alarm(self, alarm_data):
+        """Add an alarm.
+
+        Args:
+            alarm_data (dict): Alarm configuration (time, days, etc.)
+
+        Example:
+            await speaker.add_alarm({"time": "07:00", "days": ["mon", "tue", "wed"]})
+        """
+        payload = {
+            "path": "alerts:/alarm/add",
+            "roles": "value",
+            "value": json.dumps(alarm_data),
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def remove_alarm(self, alarm_id):
+        """Remove an alarm.
+
+        Args:
+            alarm_id (str): Alarm ID to remove
+
+        Example:
+            await speaker.remove_alarm("alarm_123")
+        """
+        payload = {
+            "path": "alerts:/alarm/remove",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{alarm_id}"}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def enable_alarm(self, alarm_id):
+        """Enable an alarm.
+
+        Args:
+            alarm_id (str): Alarm ID to enable
+
+        Example:
+            await speaker.enable_alarm("alarm_123")
+        """
+        payload = {
+            "path": "alerts:/alarm/enable",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{alarm_id}"}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def disable_alarm(self, alarm_id):
+        """Disable an alarm.
+
+        Args:
+            alarm_id (str): Alarm ID to disable
+
+        Example:
+            await speaker.disable_alarm("alarm_123")
+        """
+        payload = {
+            "path": "alerts:/alarm/disable",
+            "roles": "value",
+            "value": f'{{"type":"string_","string_":"{alarm_id}"}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def remove_all_alarms(self):
+        """Remove all alarms.
+
+        Example:
+            await speaker.remove_all_alarms()
+        """
+        payload = {"path": "alerts:/alarm/remove/all", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def stop_alert(self):
+        """Stop currently playing alert (alarm or timer).
+
+        Example:
+            await speaker.stop_alert()
+        """
+        payload = {"path": "alerts:/stop", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def snooze_alarm(self):
+        """Snooze currently playing alarm.
+
+        Example:
+            await speaker.snooze_alarm()
+        """
+        payload = {"path": "alerts:/alarm/snooze", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def get_snooze_time(self):
+        """Get snooze duration setting.
+
+        Returns:
+            int: Snooze time in minutes
+
+        Example:
+            minutes = await speaker.get_snooze_time()
+        """
+        payload = {"path": "settings:/alerts/snoozeTime", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            json_output = await response.json()
+            return json_output[0].get("i32_", 10)
+
+    async def set_snooze_time(self, minutes):
+        """Set snooze duration.
+
+        Args:
+            minutes (int): Snooze duration in minutes
+
+        Example:
+            await speaker.set_snooze_time(10)
+        """
+        payload = {
+            "path": "settings:/alerts/snoozeTime",
+            "roles": "value",
+            "value": f'{{"type":"i32_","i32_":{minutes}}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def play_default_alert_sound(self):
+        """Play default alert sound.
+
+        Example:
+            await speaker.play_default_alert_sound()
+        """
+        payload = {"path": "alerts:/defaultSound/play", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def stop_default_alert_sound(self):
+        """Stop default alert sound.
+
+        Example:
+            await speaker.stop_default_alert_sound()
+        """
+        payload = {"path": "alerts:/defaultSound/stop", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    # Google Cast Methods (Async)
+    async def get_cast_usage_report(self):
+        """Get Google Cast usage report setting.
+
+        Returns:
+            dict: Cast usage report status
+
+        Example:
+            report = await speaker.get_cast_usage_report()
+        """
+        payload = {"path": "googlecast:usageReport", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            return await response.json()
+
+    async def set_cast_usage_report(self, enabled):
+        """Set Google Cast usage report.
+
+        Args:
+            enabled (bool): True to enable usage reporting
+
+        Example:
+            await speaker.set_cast_usage_report(False)
+        """
+        payload = {
+            "path": "googlecast:setUsageReport",
+            "roles": "value",
+            "value": f'{{"type":"bool_","bool_":{str(enabled).lower()}}}',
+        }
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            return await response.json()
+
+    async def get_cast_tos_accepted(self):
+        """Get Google Cast Terms of Service acceptance status.
+
+        Returns:
+            bool: True if ToS accepted
+
+        Example:
+            accepted = await speaker.get_cast_tos_accepted()
+        """
+        payload = {"path": "settings:/googlecast/tosAccepted", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            json_output = await response.json()
+            return json_output[0].get("bool_", False)
 
     async def set_status(self, status):
         payload = {
