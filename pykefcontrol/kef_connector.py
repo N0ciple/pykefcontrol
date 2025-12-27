@@ -1758,29 +1758,75 @@ class KefConnector:
                     return json_output[0].get("string_", "step_1_start")
             return None
 
-    # ===== BLE Firmware Methods (XIO KW2 Subwoofer Module) =====
+    def start_calibration(self):
+        """Start room calibration (XIO soundbar only).
 
-    def check_ble_firmware_update(self):
-        """Check for BLE firmware updates (XIO soundbar only - KW2 subwoofer module).
-
-        Returns:
-            dict: Update information if available, None if no update
+        Triggers the room calibration process. The speaker will play test tones
+        and analyze the room acoustics. Monitor calibration_step to track progress.
 
         Example:
-            update = speaker.check_ble_firmware_update()  # XIO only
-            if update:
-                print("BLE firmware update available")
+            speaker.start_calibration()  # XIO only
+            # Check speaker.get_calibration_step() to monitor progress
         """
         payload = {
-            "path": "kef:ble/checkForUpdates",
-            "roles": "value",
+            "path": "kefdsp:/calibration/start",
+            "roles": "activate",
+            "value": "{}",
         }
 
         with requests.get(
-            "http://" + self.host + "/api/getData", params=payload
+            "http://" + self.host + "/api/setData", params=payload
         ) as response:
             json_output = response.json()
-            return json_output[0] if json_output else None
+            return json_output
+
+    def stop_calibration(self):
+        """Stop room calibration in progress (XIO soundbar only).
+
+        Cancels a running calibration process.
+
+        Example:
+            speaker.stop_calibration()  # XIO only
+        """
+        payload = {
+            "path": "kefdsp:/calibration/stop",
+            "roles": "activate",
+            "value": "{}",
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = response.json()
+            return json_output
+
+    # ===== BLE Firmware Methods (XIO KW2 Subwoofer Module) =====
+
+    def check_ble_firmware_update(self):
+        """Trigger BLE firmware update check (XIO soundbar only - KW2 subwoofer module).
+
+        This triggers the speaker to check KEF's servers for KW2 module updates.
+        After calling this, poll get_ble_firmware_status() which will return
+        "updateAvailable" if an update exists.
+
+        Example:
+            speaker.check_ble_firmware_update()  # XIO only - triggers check
+            time.sleep(5)  # Wait for check to complete
+            status = speaker.get_ble_firmware_status()
+            if status == "updateAvailable":
+                print("Update available!")
+        """
+        payload = {
+            "path": "kef:ble/checkForUpdates",
+            "roles": "activate",
+            "value": "{}",
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = response.json()
+            return json_output
 
     def get_ble_firmware_status(self):
         """Get BLE firmware update status (XIO soundbar only - KW2 subwoofer module).
@@ -1811,15 +1857,18 @@ class KefConnector:
             return None
 
     def get_ble_firmware_version(self):
-        """Get current BLE firmware version (XIO soundbar only - KW2 subwoofer module).
+        """Get BLE firmware version from update server (XIO soundbar only - KW2 subwoofer module).
+
+        Note: This returns the version available on KEF's update server, NOT the installed version.
+        The KEF API does not expose the actual installed version on the KW2 module.
 
         Returns:
-            str: BLE firmware version (e.g., "1.2.3", "Empty" if not set, or None if not available)
+            str: BLE firmware version from server (e.g., "1.2.3", "Empty" if not set, or None if not available)
 
         Example:
             version = speaker.get_ble_firmware_version()  # XIO only
             if version:
-                print(f"BLE firmware version: {version}")
+                print(f"BLE server version: {version}")
         """
         payload = {
             "path": "kef:ble/updateServer/txVersion",
@@ -1837,6 +1886,27 @@ class KefConnector:
                     return json_output[0].get("string_", "Empty")
             return None
 
+    def get_ble_ui_info(self):
+        """Get BLE UI information (XIO soundbar only - may include update details).
+
+        Returns:
+            dict: Full response from kef:ble/ui endpoint
+
+        Example:
+            info = speaker.get_ble_ui_info()  # XIO only
+            print(f"BLE UI info: {info}")
+        """
+        payload = {
+            "path": "kef:ble/ui",
+            "roles": "value",
+        }
+
+        with requests.get(
+            "http://" + self.host + "/api/getData", params=payload
+        ) as response:
+            json_output = response.json()
+            return json_output
+
     def install_ble_firmware_now(self):
         """Install BLE firmware update immediately (XIO soundbar only - KW2 subwoofer module).
 
@@ -1845,14 +1915,15 @@ class KefConnector:
         """
         payload = {
             "path": "kef:ble/updateNow",
-            "roles": "value",
-            "value": '{"type":"bool_","bool_":true}',
+            "roles": "activate",
+            "value": "{}",
         }
 
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
             json_output = response.json()
+            return json_output
 
     def install_ble_firmware_later(self):
         """Schedule BLE firmware update for later (XIO soundbar only - KW2 subwoofer module).
@@ -1862,14 +1933,15 @@ class KefConnector:
         """
         payload = {
             "path": "kef:ble/updateLater",
-            "roles": "value",
-            "value": '{"type":"bool_","bool_":true}',
+            "roles": "activate",
+            "value": "{}",
         }
 
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
             json_output = response.json()
+            return json_output
 
     # ===== Device Information Methods =====
 
@@ -5629,24 +5701,75 @@ class KefAsyncConnector:
                 return json_output[0].get("string_", "step_1_start")
         return None
 
+    async def start_calibration(self):
+        """Start room calibration (XIO soundbar only).
+
+        Triggers the room calibration process. The speaker will play test tones
+        and analyze the room acoustics. Monitor calibration_step to track progress.
+
+        Example:
+            await speaker.start_calibration()  # XIO only
+            # Check await speaker.get_calibration_step() to monitor progress
+        """
+        payload = {
+            "path": "kefdsp:/calibration/start",
+            "roles": "activate",
+            "value": "{}",
+        }
+
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = await response.json()
+            return json_output
+
+    async def stop_calibration(self):
+        """Stop room calibration in progress (XIO soundbar only).
+
+        Cancels a running calibration process.
+
+        Example:
+            await speaker.stop_calibration()  # XIO only
+        """
+        payload = {
+            "path": "kefdsp:/calibration/stop",
+            "roles": "activate",
+            "value": "{}",
+        }
+
+        await self.resurect_session()
+        async with self._session.get(
+            "http://" + self.host + "/api/setData", params=payload
+        ) as response:
+            json_output = await response.json()
+            return json_output
+
     # ===== BLE Firmware Methods (Async - XIO KW2 Subwoofer Module) =====
 
     async def check_ble_firmware_update(self):
-        """Check for BLE firmware updates (XIO soundbar only - KW2 subwoofer module).
+        """Trigger BLE firmware update check (XIO soundbar only - KW2 subwoofer module).
 
-        Returns:
-            dict: Update information if available, None if no update
+        This triggers the speaker to check KEF's servers for KW2 module updates.
+        After calling this, poll get_ble_firmware_status() which will return
+        "updateAvailable" if an update exists.
 
         Example:
-            update = await speaker.check_ble_firmware_update()  # XIO only
-            if update:
-                print("BLE firmware update available")
+            await speaker.check_ble_firmware_update()  # XIO only - triggers check
+            await asyncio.sleep(5)  # Wait for check to complete
+            status = await speaker.get_ble_firmware_status()
+            if status == "updateAvailable":
+                print("Update available!")
         """
-        payload = {"path": "kef:ble/checkForUpdates", "roles": "value"}
+        payload = {
+            "path": "kef:ble/checkForUpdates",
+            "roles": "activate",
+            "value": "{}",
+        }
         await self.resurect_session()
-        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+        async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
             json_output = await response.json()
-        return json_output[0] if json_output else None
+        return json_output
 
     async def get_ble_firmware_status(self):
         """Get BLE firmware update status (XIO soundbar only - KW2 subwoofer module).
@@ -5672,15 +5795,18 @@ class KefAsyncConnector:
         return None
 
     async def get_ble_firmware_version(self):
-        """Get current BLE firmware version (XIO soundbar only - KW2 subwoofer module).
+        """Get BLE firmware version from update server (XIO soundbar only - KW2 subwoofer module).
+
+        Note: This returns the version available on KEF's update server, NOT the installed version.
+        The KEF API does not expose the actual installed version on the KW2 module.
 
         Returns:
-            str: BLE firmware version (e.g., "1.2.3", "Empty" if not set, or None if not available)
+            str: BLE firmware version from server (e.g., "1.2.3", "Empty" if not set, or None if not available)
 
         Example:
             version = await speaker.get_ble_firmware_version()  # XIO only
             if version:
-                print(f"BLE firmware version: {version}")
+                print(f"BLE server version: {version}")
         """
         payload = {"path": "kef:ble/updateServer/txVersion", "roles": "value"}
         await self.resurect_session()
@@ -5693,6 +5819,22 @@ class KefAsyncConnector:
                 return json_output[0].get("string_", "Empty")
         return None
 
+    async def get_ble_ui_info(self):
+        """Get BLE UI information (XIO soundbar only - may include update details).
+
+        Returns:
+            dict: Full response from kef:ble/ui endpoint
+
+        Example:
+            info = await speaker.get_ble_ui_info()  # XIO only
+            print(f"BLE UI info: {info}")
+        """
+        payload = {"path": "kef:ble/ui", "roles": "value"}
+        await self.resurect_session()
+        async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            json_output = await response.json()
+            return json_output
+
     async def install_ble_firmware_now(self):
         """Install BLE firmware update immediately (XIO soundbar only - KW2 subwoofer module).
 
@@ -5701,12 +5843,13 @@ class KefAsyncConnector:
         """
         payload = {
             "path": "kef:ble/updateNow",
-            "roles": "value",
-            "value": '{"type":"bool_","bool_":true}',
+            "roles": "activate",
+            "value": "{}",
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
             json_output = await response.json()
+            return json_output
 
     async def install_ble_firmware_later(self):
         """Schedule BLE firmware update for later (XIO soundbar only - KW2 subwoofer module).
@@ -5716,12 +5859,13 @@ class KefAsyncConnector:
         """
         payload = {
             "path": "kef:ble/updateLater",
-            "roles": "value",
-            "value": '{"type":"bool_","bool_":true}',
+            "roles": "activate",
+            "value": "{}",
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
             json_output = await response.json()
+            return json_output
 
     # ===== Device Information Methods (Async) =====
 
