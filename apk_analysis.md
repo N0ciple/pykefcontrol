@@ -164,22 +164,6 @@ Tested identical endpoint sets across all three models to identify:
 | **Network/Streaming** (6) | 5 | 5 | 5 | All identical |
 | **Media Player** (4) | 4 | 4 | 4 | All identical |
 
-### Key Findings
-
-1. **LSX II vs LSX II LT**: IDENTICAL feature set (74/92)
-   - Only hardware differs (driver size)
-   - Same firmware architecture
-   - Same API endpoints
-
-2. **XIO vs LSX Series**: +13 exclusive features (87/92)
-   - Soundbar-specific audio processing
-   - Built-in room calibration
-   - G-sensor for placement detection
-   - Programmable remote buttons
-   - Built-in KW2 wireless subwoofer module
-
-3. **Firmware Impact**: LSX II V25110 (older) missing 3 fields vs V26120
-
 ---
 
 ## Complete Feature Discovery
