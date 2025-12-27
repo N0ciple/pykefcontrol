@@ -460,6 +460,17 @@ await speaker.resurect_session()
 
 **✅ 100% Complete - All 163 public methods implemented!**
 
+All 57 newly discovered methods from APK analysis have been verified as implemented:
+- ✅ Volume Management (6 methods) - Per-input volumes, startup volume, volume behavior
+- ✅ Network Diagnostics (6 methods) - Internet ping, stability check, speed tests
+- ✅ System Behavior (8 methods) - Standby modes, wake sources, HDMI auto-switch, USB charging
+- ✅ LED Controls (5 methods) - Front LED, standby LED, top panel controls (XIO)
+- ✅ Remote Control (7 methods) - IR remote, code sets, EQ buttons, fixed volume
+- ✅ Device Info (6 methods) - Model name, serial, KEF ID, hardware version, MAC
+- ✅ Privacy/Streaming (4 methods) - Analytics, streaming quality, UI language
+- ✅ Advanced Operations (5 methods) - Speaker location, DSP reset, factory reset
+- ✅ Network Management (2 methods) - WiFi scanning and activation
+
 See [apk_analysis.md](apk_analysis.md) for complete API documentation and feature analysis.
 
 ## Dependencies
