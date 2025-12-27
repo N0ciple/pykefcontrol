@@ -458,18 +458,87 @@ await speaker.resurect_session()
 
 ## Implementation Status
 
-**✅ 100% Complete - All 163 public methods implemented!**
+### API Endpoint Discovery: 209 Total Endpoints Found
 
-All 57 newly discovered methods from APK analysis have been verified as implemented:
-- ✅ Volume Management (6 methods) - Per-input volumes, startup volume, volume behavior
-- ✅ Network Diagnostics (6 methods) - Internet ping, stability check, speed tests
-- ✅ System Behavior (8 methods) - Standby modes, wake sources, HDMI auto-switch, USB charging
-- ✅ LED Controls (5 methods) - Front LED, standby LED, top panel controls (XIO)
-- ✅ Remote Control (7 methods) - IR remote, code sets, EQ buttons, fixed volume
-- ✅ Device Info (6 methods) - Model name, serial, KEF ID, hardware version, MAC
-- ✅ Privacy/Streaming (4 methods) - Analytics, streaming quality, UI language
-- ✅ Advanced Operations (5 methods) - Speaker location, DSP reset, factory reset
-- ✅ Network Management (2 methods) - WiFi scanning and activation
+From complete JADX decompilation of KEF Connect v1.26.1 APK (`ApiPath.java`):
+- **209 total API endpoints** discovered across all categories
+- **~150+ endpoints** implemented via 163 Python methods
+- **~30 endpoints** not yet implemented (specialized features)
+
+### ✅ Implemented Features (163 Methods)
+
+**Core Control (46 methods)**
+- Power, volume, source control, playback, media info, mute, speaker status
+
+**DSP/EQ Methods (36 methods)**
+- Complete audio customization: desk mode, wall mode, bass, treble, balance
+- Phase correction, high-pass filter, audio polarity
+- Full EQ profile management
+
+**Subwoofer Control (10 methods)**
+- Gain, preset, low-pass, polarity, stereo mode, KW1 wireless adapter
+
+**XIO Soundbar Features (14 methods)**
+- Sound profiles (6 modes), dialogue mode, wall mount detection
+- Room calibration (status, result, step)
+- BLE firmware updates for KW2 subwoofer module
+
+**Profile Management (10 methods)**
+- Save, load, list, delete, rename, import/export EQ profiles
+
+**Firmware Management (3 methods)**
+- Check for updates, get status, install updates
+
+**Volume Management (6 methods)**
+- Per-input default volumes, startup volume, volume behavior settings
+
+**Network Diagnostics (6 methods)**
+- Internet ping, stability check, speed tests (start/stop/status/results)
+
+**System Behavior (8 methods)**
+- Standby modes, wake sources, HDMI auto-switch, USB charging, cable mode
+
+**LED Controls (5 methods)**
+- Front LED, standby LED, top panel controls (XIO-specific)
+
+**Remote Control (7 methods)**
+- IR remote enable/disable, code sets, EQ buttons (XIO), fixed volume
+
+**Device Info (6 methods)**
+- Model name, serial number, KEF ID, hardware version, MAC address
+
+**Privacy/Streaming (4 methods)**
+- Analytics controls, streaming quality, UI language
+
+**Advanced Operations (5 methods)**
+- Speaker location, DSP defaults restore, factory reset, firmware progress
+
+**Network Management (2 methods)**
+- WiFi scanning and activation
+
+### ⚠️ Not Yet Implemented (~30 Endpoints)
+
+**Player Control (5 paths)** - Some return 500 errors, use polling instead
+- `player:volume`, `player:player/control`, `player:player/data`, etc.
+
+**Alerts & Timers (13 paths)** - Alarm/timer management
+- `alerts:/list`, `alerts:/timer/add`, `alerts:/alarm/add`, etc.
+
+**Bluetooth Control (4 paths)** - BT device management
+- `bluetooth:state`, `bluetooth:disconnect`, `bluetooth:externalDiscoverable`, etc.
+
+**Grouping/Multiroom (2 paths)** - Multi-speaker synchronization
+- `grouping:members`, `grouping:savePersistentGroup`
+
+**Notifications (3 paths)** - UI notification system
+- `notifications:/display/queue`, `notifications:/display/cancel`, etc.
+
+**Google Cast (3 paths)** - Cast operation paths (settings paths implemented)
+- `googlecast:usageReport`, `googlecast:setUsageReport`
+
+**Power Management (3 paths)** - Direct power control paths
+- `powermanager:target`, `powermanager:targetRequest`, `powermanager:goReboot`
+- Note: Power on/shutdown implemented via different endpoints
 
 See [apk_analysis.md](apk_analysis.md) for complete API documentation and feature analysis.
 
