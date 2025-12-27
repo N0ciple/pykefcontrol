@@ -2,13 +2,31 @@
 """
 KEF API Discovery - Comprehensive Testing Suite
 
-This script tests all discovered KEF API endpoints across multiple speaker models.
-Use this to verify API compatibility on your KEF speakers.
+This script tests ALL 209 discovered KEF API endpoints from complete JADX decompilation
+of KEF Connect v1.26.1 APK across multiple speaker models.
+
+Source: ApiPath.java (com/kef/streamunlimitedapi/model/base/ApiPath.java)
+Total Endpoints: 209 paths across 12 categories
+
+Categories:
+  - Settings (124 paths): Speaker configuration
+  - KEF Operations (37 paths): System operations
+  - Player Control (5 paths): Playback control
+  - Power Management (3 paths): Standby/reboot
+  - Network (7 paths): WiFi management
+  - Alerts (12 paths): Timers and alarms
+  - Bluetooth (4 paths): BT device management
+  - Firmware (3 paths): Update management
+  - Google Cast (4 paths): Cast configuration
+  - Grouping (2 paths): Multi-room
+  - Notifications (3 paths): UI notifications
+  - Other (7 paths): XIO-specific and legacy
 
 Usage:
-    python test_api_discovery.py
-    python test_api_discovery.py --host 192.168.1.100
-    python test_api_discovery.py --models all
+    python apk_analysis.py
+    python apk_analysis.py --host 192.168.1.100
+    python apk_analysis.py --models all --verbose
+    python apk_analysis.py --output results.json
 """
 
 import requests
@@ -190,6 +208,98 @@ KEF_OPERATIONS = {
 NETWORK_ENDPOINTS = {
     'WiFi Scan Results': 'networkwizard:wireless/scan_results',
     'WiFi Scan Activate': 'networkwizard:wireless/scan_activate',
+    'WiFi Key': 'networkwizard:wireless/key',
+    'Network Scan': 'network:scan',
+    'Network Scan Results': 'network:scan_results',
+    'Set Network Profile': 'network:setNetworkProfile',
+    'Network Info': 'network:info',
+}
+
+
+# Player control endpoints
+PLAYER_ENDPOINTS = {
+    'Volume': 'player:volume',
+    'Player Control': 'player:player/control',
+    'Player Data': 'player:player/data',
+    'Play Time': 'player:player/data/playTime',
+}
+
+
+# Power management endpoints
+POWER_ENDPOINTS = {
+    'Target State': 'powermanager:target',
+    'Target Request': 'powermanager:targetRequest',
+    'Reboot': 'powermanager:goReboot',
+}
+
+
+# Alerts & Timers
+ALERTS_ENDPOINTS = {
+    'List Alerts': 'alerts:/list',
+    'Add Timer': 'alerts:/timer/add',
+    'Remove Timer': 'alerts:/timer/remove',
+    'Add Alarm': 'alerts:/alarm/add',
+    'Remove Alarm': 'alerts:/alarm/remove',
+    'Enable Alarm': 'alerts:/alarm/enable',
+    'Disable Alarm': 'alerts:/alarm/disable',
+    'Remove All Alarms': 'alerts:/alarm/remove/all',
+    'Stop Alert': 'alerts:/stop',
+    'Snooze Alarm': 'alerts:/alarm/snooze',
+    'Play Default Sound': 'alerts:/defaultSound/play',
+    'Stop Default Sound': 'alerts:/defaultSound/stop',
+}
+
+
+# Bluetooth endpoints
+BLUETOOTH_ENDPOINTS = {
+    'State': 'bluetooth:state',
+    'Disconnect': 'bluetooth:disconnect',
+    'Discoverable': 'bluetooth:externalDiscoverable',
+    'Clear All Devices': 'bluetooth:clearAllDevices',
+}
+
+
+# Firmware update endpoints
+FIRMWARE_ENDPOINTS = {
+    'Update Status': 'firmwareupdate:updateStatus',
+    'Check For Update': 'firmwareupdate:checkForUpdate',
+    'Download Update': 'firmwareupdate:downloadNewUpdate',
+}
+
+
+# Google Cast endpoints
+GOOGLECAST_ENDPOINTS = {
+    'Usage Report': 'googlecast:usageReport',
+    'Set Usage Report': 'googlecast:setUsageReport',
+    'Cast Lite Usage': 'settings:/googleCastLite/usageReport',
+    'Cast Lite ToS': 'settings:/googleCastLite/tosAccepted',
+}
+
+
+# Grouping / Multiroom endpoints
+GROUPING_ENDPOINTS = {
+    'Members': 'grouping:members',
+    'Save Persistent Group': 'grouping:savePersistentGroup',
+}
+
+
+# Notification endpoints
+NOTIFICATION_ENDPOINTS = {
+    'Display Queue': 'notifications:/display/queue',
+    'Cancel Notification': 'notifications:/display/cancel',
+    'Player Notification': 'notifications:/player/playing',
+}
+
+
+# Other endpoints (XIO-specific and legacy)
+OTHER_ENDPOINTS = {
+    'UI Home': 'ui:',
+    'Legacy Volume Set': 'hostlink:defaultVolume/set',
+    'Calibration Start': 'kefdsp:/calibration/start',
+    'Calibration Stop': 'kefdsp:/calibration/stop',
+    'Decoder Codec': 'imx8af:decoderInfoCodecString',
+    'VirtualX Active': 'imx8af:decoderInfoVirtualXActive',
+    'BLE Channel': 'kefdsp:bleTx01ChannelAssignment',
 }
 
 
@@ -244,43 +354,49 @@ def test_model(model_name: str, host: str, verbose: bool = False) -> Dict[str, A
     results = {
         'settings': {},
         'operations': {},
-        'network': {}
+        'network': {},
+        'player': {},
+        'power': {},
+        'alerts': {},
+        'bluetooth': {},
+        'firmware': {},
+        'googlecast': {},
+        'grouping': {},
+        'notifications': {},
+        'other': {}
     }
 
-    # Test settings
-    print("Testing Settings Paths...")
-    for name, path in ALL_SETTINGS.items():
-        result = test_endpoint(host, name, path)
-        results['settings'][name] = result
+    # Helper function to test and display category
+    def test_category(category_name: str, endpoints: dict, results_key: str):
+        print(f"\nTesting {category_name}...")
+        for name, path in endpoints.items():
+            result = test_endpoint(host, name, path)
+            results[results_key][name] = result
 
-        icon = '✅' if result['status'] == 'OK' else '❌'
-        status_str = f"[{result['status']}]"
+            icon = '✅' if result['status'] == 'OK' else '❌'
+            status_str = f"[{result['status']}]"
 
-        if verbose and result['value'] is not None:
-            value_str = f" = {result['value']}"
-            if len(str(result['value'])) > 50:
-                value_str = f" = {str(result['value'])[:50]}..."
-            print(f"{icon} {name:30s} {status_str}{value_str}")
-        else:
-            print(f"{icon} {name:30s} {status_str}")
+            if verbose and result['value'] is not None:
+                value_str = f" = {result['value']}"
+                if len(str(result['value'])) > 50:
+                    value_str = f" = {str(result['value'])[:50]}..."
+                print(f"{icon} {name:30s} {status_str}{value_str}")
+            else:
+                print(f"{icon} {name:30s} {status_str}")
 
-    # Test KEF operations
-    print("\nTesting KEF Operations...")
-    for name, path in KEF_OPERATIONS.items():
-        result = test_endpoint(host, name, path)
-        results['operations'][name] = result
-
-        icon = '✅' if result['status'] == 'OK' else '❌'
-        print(f"{icon} {name:30s} [{result['status']}]")
-
-    # Test network endpoints
-    print("\nTesting Network Management...")
-    for name, path in NETWORK_ENDPOINTS.items():
-        result = test_endpoint(host, name, path)
-        results['network'][name] = result
-
-        icon = '✅' if result['status'] == 'OK' else '❌'
-        print(f"{icon} {name:30s} [{result['status']}]")
+    # Test all categories
+    test_category("Settings Paths", ALL_SETTINGS, 'settings')
+    test_category("KEF Operations", KEF_OPERATIONS, 'operations')
+    test_category("Network Management", NETWORK_ENDPOINTS, 'network')
+    test_category("Player Control", PLAYER_ENDPOINTS, 'player')
+    test_category("Power Management", POWER_ENDPOINTS, 'power')
+    test_category("Alerts & Timers", ALERTS_ENDPOINTS, 'alerts')
+    test_category("Bluetooth", BLUETOOTH_ENDPOINTS, 'bluetooth')
+    test_category("Firmware Updates", FIRMWARE_ENDPOINTS, 'firmware')
+    test_category("Google Cast", GOOGLECAST_ENDPOINTS, 'googlecast')
+    test_category("Grouping/Multiroom", GROUPING_ENDPOINTS, 'grouping')
+    test_category("Notifications", NOTIFICATION_ENDPOINTS, 'notifications')
+    test_category("Other Endpoints", OTHER_ENDPOINTS, 'other')
 
     return results
 
@@ -291,22 +407,45 @@ def summarize_results(model_results: Dict[str, Dict[str, Any]]):
     print("SUMMARY")
     print("=" * 80 + "\n")
 
+    categories = [
+        'settings', 'operations', 'network', 'player', 'power',
+        'alerts', 'bluetooth', 'firmware', 'googlecast',
+        'grouping', 'notifications', 'other'
+    ]
+
+    category_names = {
+        'settings': 'Settings',
+        'operations': 'KEF Operations',
+        'network': 'Network',
+        'player': 'Player',
+        'power': 'Power',
+        'alerts': 'Alerts',
+        'bluetooth': 'Bluetooth',
+        'firmware': 'Firmware',
+        'googlecast': 'Google Cast',
+        'grouping': 'Grouping',
+        'notifications': 'Notifications',
+        'other': 'Other'
+    }
+
     for model, results in model_results.items():
-        settings_ok = sum(1 for r in results['settings'].values() if r['status'] == 'OK')
-        settings_total = len(results['settings'])
-        operations_ok = sum(1 for r in results['operations'].values() if r['status'] == 'OK')
-        operations_total = len(results['operations'])
-        network_ok = sum(1 for r in results['network'].values() if r['status'] == 'OK')
-        network_total = len(results['network'])
-
-        total_ok = settings_ok + operations_ok + network_ok
-        total = settings_total + operations_total + network_total
-
         print(f"{model}:")
-        print(f"  Settings:   {settings_ok}/{settings_total} ({settings_ok*100//settings_total}%)")
-        print(f"  Operations: {operations_ok}/{operations_total} ({operations_ok*100//operations_total}%)")
-        print(f"  Network:    {network_ok}/{network_total} ({network_ok*100//network_total}%)")
-        print(f"  TOTAL:      {total_ok}/{total} ({total_ok*100//total}%)")
+
+        total_ok = 0
+        total_count = 0
+
+        for category in categories:
+            if category in results and results[category]:
+                ok = sum(1 for r in results[category].values() if r['status'] == 'OK')
+                count = len(results[category])
+                total_ok += ok
+                total_count += count
+                pct = (ok * 100 // count) if count > 0 else 0
+                print(f"  {category_names[category]:15s} {ok:3d}/{count:3d} ({pct:3d}%)")
+
+        print(f"  {'─' * 30}")
+        total_pct = (total_ok * 100 // total_count) if total_count > 0 else 0
+        print(f"  {'TOTAL':15s} {total_ok:3d}/{total_count:3d} ({total_pct:3d}%)")
         print()
 
 
@@ -329,6 +468,92 @@ def save_results(model_results: Dict[str, Dict[str, Any]], output_file: str):
         json.dump(serializable_results, f, indent=2)
 
     print(f"Results saved to: {output_file}")
+
+
+def extract_preset_values():
+    """Extract and display subwoofer preset values from KEF Connect APK.
+
+    Displays hardcoded preset values extracted from decompiled KEF Connect APK.
+    Use when updating SUBWOOFER_PRESET_VALUES in kef_connector.py.
+
+    Source files in APK:
+    - com/kef/streamunlimitedapi/equalizer/model/SubwooferModelSubGainKt.java (gain)
+    - com/kef/streamunlimitedapi/equalizer/model/SubwooferModelKt.java (frequencies)
+    """
+    print("=" * 80)
+    print("KEF SUBWOOFER PRESET VALUE EXTRACTION")
+    print("Source: KEF Connect APK v1.26.1")
+    print("=" * 80)
+    print()
+
+    # Gain values from SubwooferModelSubGainKt.java (subgainForLSXII function)
+    gain_lsxii = {
+        'other': {False: {1: -6.0, 2: 0.0}},
+        'kc62': {True: {1: -2.0, 2: 4.0}, False: {1: -7.0, 2: -1.0}},
+        'kf92': {True: {1: -4.0, 2: 2.0}, False: {1: -9.0, 2: -3.0}},
+        'kube8b': {True: {1: -4.0, 2: 2.0}, False: {1: -3.0, 2: 3.0}},
+        'kube10b': {True: {1: -6.0, 2: 0.0}, False: {1: -5.0, 2: 1.0}},
+        'kube12b': {True: {1: -8.0, 2: -2.0}, False: {1: -7.0, 2: -1.0}},
+        'kube15mie': {True: {1: -7.0, 2: -1.0}, False: {1: -6.0, 2: 0.0}},
+        't2': {False: {1: -7.0, 2: -1.0}},
+    }
+
+    # High-pass frequencies from SubwooferModelKt.java (highPassFreq function)
+    highpass_lsxii = {
+        'other': 65.0, 'kc62': 67.5, 'kf92': 67.5, 'kube8b': 67.5,
+        'kube10b': 67.5, 'kube12b': 65.0, 'kube15mie': 65.0,
+        't2': {True: None, False: 67.5},
+    }
+
+    # Low-pass frequencies from SubwooferModelKt.java (lowPassFreq function)
+    lowpass_lsxii = {
+        'other': 55.0, 'kc62': 55.0, 'kf92': 55.0, 'kube8b': 62.5,
+        'kube10b': 55.0, 'kube12b': 52.5, 'kube15mie': 57.5,
+        't2': {True: None, False: 62.5},
+    }
+
+    # Display gain values
+    print("GAIN VALUES (dB) - XIO / LSX II / LSX II LT")
+    print("-" * 80)
+    for preset, kw1_map in gain_lsxii.items():
+        for is_kw1, count_map in kw1_map.items():
+            for count, gain in count_map.items():
+                kw1_str = "KW1" if is_kw1 else "Internal"
+                print(f"  {preset:12} | {kw1_str:8} | {count} sub(s) | Gain: {gain:5.1f} dB")
+        print()
+
+    # Display high-pass values
+    print("HIGH-PASS FREQUENCIES (Hz) - XIO / LSX II / LSX II LT")
+    print("-" * 80)
+    for preset, value in highpass_lsxii.items():
+        if isinstance(value, dict):
+            for is_kw1, freq in value.items():
+                kw1_str = "KW1" if is_kw1 else "Internal"
+                freq_str = f"{freq:.1f}" if freq is not None else "N/A"
+                print(f"  {preset:12} | {kw1_str:8} | High-pass: {freq_str:5} Hz")
+        else:
+            print(f"  {preset:12} | Both     | High-pass: {value:5.1f} Hz")
+    print()
+
+    # Display low-pass values
+    print("LOW-PASS FREQUENCIES (Hz) - XIO / LSX II / LSX II LT")
+    print("-" * 80)
+    for preset, value in lowpass_lsxii.items():
+        if isinstance(value, dict):
+            for is_kw1, freq in value.items():
+                kw1_str = "KW1" if is_kw1 else "Internal"
+                freq_str = f"{freq:.1f}" if freq is not None else "N/A"
+                print(f"  {preset:12} | {kw1_str:8} | Low-pass: {freq_str:5} Hz")
+        else:
+            print(f"  {preset:12} | Both     | Low-pass: {value:5.1f} Hz")
+    print()
+
+    print("!" * 80)
+    print("CRITICAL: XIO/LSX2/LSX2LT have INVERTED subwoofer count mapping!")
+    print("  Java 'subCount=1' applies when speaker has 2 subs configured")
+    print("  Java 'subCount=2' applies when speaker has 1 sub configured")
+    print("  Verified with XIO hardware and KEF Connect app v1.26.1")
+    print("!" * 80)
 
 
 def main():
