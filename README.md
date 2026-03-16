@@ -204,6 +204,111 @@ All the possible keys of the dictionary are:
  `source`, `song_status`, `volume`, `song_info`, `song_length`, `status`, `speaker_status`, `device_name`, `mute` and `other`.
 `other` contains some of the speaker-specific information that might have changed, but are not properties of either `KefConnector` or `KefAsyncConnector`. 
 
+**Volume Management**
+```python
+# Get default startup volume for a specific input source
+my_speaker.get_default_volume('wifi')
+# (output example) >>> 50
+
+# Set default startup volume for a specific input source
+# Supported sources: 'wifi', 'bluetooth', 'optical', 'coaxial', 'usb', 'analogue', 'tv'
+my_speaker.set_default_volume('wifi', 50)
+
+# Get default volumes for all input sources at once
+my_speaker.get_all_default_volumes()
+# (output example) >>> {'wifi': 50, 'bluetooth': 40, 'optical': 60, 'coaxial': 60, 'usb': 50, 'analogue': 60, 'tv': 50}
+
+# Get volume settings (max volume cap, step size, limit)
+my_speaker.get_volume_settings()
+# (output example) >>> {'max_volume': 100, 'step': 5, 'limit': 85}
+
+# Set volume settings
+my_speaker.set_volume_settings(max_volume=100, step=5, limit=85)
+
+# Get/set whether standby resumes at global or per-source volume
+my_speaker.get_standby_volume_behavior()
+# (output example) >>> True  # True = use global volume, False = use per-source volume
+my_speaker.set_standby_volume_behavior(True)
+
+# Get/set startup volume override (when enabled, uses configured default volumes on wake)
+my_speaker.get_startup_volume_enabled()
+# (output example) >>> False
+my_speaker.set_startup_volume_enabled(True)
+```
+
+**Hardware Settings**
+```python
+# Standby timeout
+my_speaker.get_standby_mode()
+# (output example) >>> 'standbyOff'  # 'standbyOff', 'standby20m', 'standby60m'
+my_speaker.set_standby_mode('standby20m')
+
+# Power-on chime
+my_speaker.get_startup_tone()
+# (output example) >>> True
+my_speaker.set_startup_tone(False)
+
+# HDMI auto-source switching
+my_speaker.get_auto_switch_hdmi()
+# (output example) >>> True
+my_speaker.set_auto_switch_hdmi(False)
+
+# Wired connection mode
+my_speaker.get_cable_mode()
+my_speaker.set_cable_mode('stereo')
+
+# Left/right master channel assignment
+my_speaker.get_master_channel()
+# (output example) >>> 'left'
+my_speaker.set_master_channel('right')
+
+# Which input source wakes the speaker from standby
+my_speaker.get_wake_source()
+my_speaker.set_wake_source('wifi')
+
+# Subwoofer and KW1 wireless sub auto-wake on startup
+my_speaker.get_subwoofer_wake_on_startup()
+my_speaker.set_subwoofer_wake_on_startup(True)
+my_speaker.get_kw1_wake_on_startup()
+my_speaker.set_kw1_wake_on_startup(True)
+
+# USB port charging
+my_speaker.get_usb_charging()
+my_speaker.set_usb_charging(True)
+
+# Fixed volume output level (for use with AV receivers)
+my_speaker.get_fixed_volume_mode()
+# (output example) >>> None  # None = disabled, integer = fixed level
+my_speaker.set_fixed_volume_mode(50)
+
+# Generic write method (counterpart to get_request)
+my_speaker.set_request('settings:/kef/host/speakerOn', 'activate', 'true')
+```
+
+**LED Controls**
+```python
+# Front logo LED
+my_speaker.get_front_led()
+# (output example) >>> True
+my_speaker.set_front_led(False)
+
+# Standby indicator LED
+my_speaker.get_standby_led()
+my_speaker.set_standby_led(True)
+
+# Top touch panel (enable/disable)
+my_speaker.get_top_panel_enabled()
+my_speaker.set_top_panel_enabled(True)
+
+# Top panel LED in active state
+my_speaker.get_top_panel_led()
+my_speaker.set_top_panel_led(True)
+
+# Top panel LED in standby state
+my_speaker.get_top_panel_standby_led()
+my_speaker.set_top_panel_standby_led(False)
+```
+
 #### Advanced features
 This function is used internally by pykefcontrol and returns a JSON output with a lot of information. You might want to use them to get extra information such as the artwork/album cover URL, which does not have a dedicated function _yet_ in pykefcontrol.
 
