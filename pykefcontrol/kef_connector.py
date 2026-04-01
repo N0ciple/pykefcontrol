@@ -1,12 +1,19 @@
+import json
+
 import requests
 import aiohttp
 import time
 import warnings
 
 
+_POST_MODELS = {"LS50WII"}
+_MODEL_ALIASES = {"LS50W2": "LS50WII"}
+
+
 class KefConnector:
-    def __init__(self, host):
+    def __init__(self, host, model=None):
         self.host = host
+        self._speaker_model = _MODEL_ALIASES.get(model, model)
         self.previous_volume = self.volume
         self.last_polled = None
         self.polling_queue = None
@@ -46,6 +53,22 @@ class KefConnector:
         """
         self._track_control("previous")
 
+    def _set_data(self, payload):
+        if self._speaker_model is None:
+            self._speaker_model = self.speaker_model
+        if self._speaker_model in _POST_MODELS:
+            with requests.post(
+                "http://" + self.host + "/api/setData", json=payload
+            ) as response:
+                return response.json()
+        else:
+            payload = dict(payload)
+            payload["value"] = json.dumps(payload["value"], separators=(",", ":"))
+            with requests.get(
+                "http://" + self.host + "/api/setData", params=payload
+            ) as response:
+                return response.json()
+
     def _track_control(self, command):
         """
         toogle play/pause
@@ -53,13 +76,10 @@ class KefConnector:
         payload = {
             "path": "player:player/control",
             "roles": "activate",
-            "value": """{{"control":"{command}"}}""".format(command=command),
+            "value": {"control": command},
         }
 
-        with requests.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = response.json()
+        self._set_data(payload)
 
     def set_volume(self, volume):
         """
@@ -361,15 +381,10 @@ class KefConnector:
         payload = {
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
-            "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{status}"}}""".format(
-                status=status
-            ),
+            "value": {"type": "kefPhysicalSource", "kefPhysicalSource": status},
         }
 
-        with requests.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = response.json()
+        self._set_data(payload)
 
     @property
     def source(self):
@@ -398,15 +413,10 @@ class KefConnector:
         payload = {
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
-            "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{source}"}}""".format(
-                source=source
-            ),
+            "value": {"type": "kefPhysicalSource", "kefPhysicalSource": source},
         }
 
-        with requests.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = response.json()
+        self._set_data(payload)
 
     @property
     def volume(self):
@@ -430,13 +440,10 @@ class KefConnector:
         payload = {
             "path": "player:volume",
             "roles": "value",
-            "value": """{{"type":"i32_","i32_":{volume}}}""".format(volume=volume),
+            "value": {"type": "i32_", "i32_": volume},
         }
 
-        with requests.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = response.json()
+        self._set_data(payload)
 
     @property
     def is_playing(self):
@@ -507,9 +514,10 @@ class KefConnector:
 
 
 class KefAsyncConnector:
-    def __init__(self, host, session=None):
+    def __init__(self, host, session=None, model=None):
         self.host = host
         self._session = session
+        self._speaker_model = _MODEL_ALIASES.get(model, model)
         self.previous_volume = (
             15  # Hardcoded previous volume, in case unmute is used before mute
         )
@@ -556,18 +564,31 @@ class KefAsyncConnector:
         """Previous track"""
         await self._track_control("previous")
 
+    async def _set_data(self, payload):
+        if self._speaker_model is None:
+            self._speaker_model = await self.get_speaker_model()
+        await self.resurect_session()
+        if self._speaker_model in _POST_MODELS:
+            async with self._session.post(
+                "http://" + self.host + "/api/setData", json=payload
+            ) as response:
+                return await response.json()
+        else:
+            payload = dict(payload)
+            payload["value"] = json.dumps(payload["value"], separators=(",", ":"))
+            async with self._session.get(
+                "http://" + self.host + "/api/setData", params=payload
+            ) as response:
+                return await response.json()
+
     async def _track_control(self, command):
         """toogle play/pause"""
         payload = {
             "path": "player:player/control",
             "roles": "activate",
-            "value": """{{"control":"{command}"}}""".format(command=command),
+            "value": {"control": command},
         }
-        await self.resurect_session()
-        async with self._session.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = await response.json()
+        await self._set_data(payload)
 
     async def _get_player_data(self):
         """get data about currently playing media"""
@@ -639,42 +660,26 @@ class KefAsyncConnector:
         payload = {
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
-            "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{source}"}}""".format(
-                source=source
-            ),
+            "value": {"type": "kefPhysicalSource", "kefPhysicalSource": source},
         }
-        await self.resurect_session()
-        async with self._session.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = await response.json()
+        await self._set_data(payload)
 
     async def set_volume(self, volume):
         """Set speaker volume (between 0 and 100)"""
         payload = {
             "path": "player:volume",
             "roles": "value",
-            "value": """{{"type":"i32_","i32_":{volume}}}""".format(volume=volume),
+            "value": {"type": "i32_", "i32_": volume},
         }
-        await self.resurect_session()
-        async with self._session.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = await response.json()
+        await self._set_data(payload)
 
     async def set_status(self, status):
         payload = {
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
-            "value": """{{"type":"kefPhysicalSource","kefPhysicalSource":"{status}"}}""".format(
-                status=status
-            ),
+            "value": {"type": "kefPhysicalSource", "kefPhysicalSource": status},
         }
-        await self.resurect_session()
-        async with self._session.get(
-            "http://" + self.host + "/api/setData", params=payload
-        ) as response:
-            json_output = await response.json()
+        await self._set_data(payload)
 
     async def get_song_information(self, song_data=None):
         """Get song title, album and artist"""
