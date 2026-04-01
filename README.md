@@ -1,3 +1,7 @@
+> [!WARNING]
+> Version 4.0 of the firmware adds a password to protect the webui. 
+> I am currenlty working to see if it is possible to adapt pykefcontrol.
+
 # 🔉 pykefcontrol 
 Python library for controlling KEF speakers : LS50WII, LSX II and LS60
 
