@@ -60,6 +60,7 @@ class KefConnector:
             with requests.post(
                 "http://" + self.host + "/api/setData", json=payload
             ) as response:
+                response.raise_for_status()
                 return response.json()
         else:
             payload = dict(payload)
@@ -67,6 +68,7 @@ class KefConnector:
             with requests.get(
                 "http://" + self.host + "/api/setData", params=payload
             ) as response:
+                response.raise_for_status()
                 return response.json()
 
     def _track_control(self, command):
@@ -99,6 +101,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]
@@ -182,6 +185,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output
@@ -250,6 +254,7 @@ class KefConnector:
         with requests.post(
             "http://" + self.host + "/api/event/modifyQueue", json=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # Update polling_queue property with queue uuid
@@ -322,6 +327,7 @@ class KefConnector:
             params=payload,
             timeout=timeout + 0.5,  # add 0.5 seconds to timeout to allow for processing
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # Process all events
@@ -348,6 +354,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["string_"]
@@ -360,6 +367,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["string_"]
@@ -372,6 +380,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["kefSpeakerStatus"]
@@ -400,6 +409,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["kefPhysicalSource"]
@@ -431,6 +441,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["i32_"]
@@ -475,6 +486,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["i64_"]
@@ -492,6 +504,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["string_"]
@@ -572,6 +585,7 @@ class KefAsyncConnector:
             async with self._session.post(
                 "http://" + self.host + "/api/setData", json=payload
             ) as response:
+                response.raise_for_status()
                 return await response.json()
         else:
             payload = dict(payload)
@@ -579,6 +593,7 @@ class KefAsyncConnector:
             async with self._session.get(
                 "http://" + self.host + "/api/setData", params=payload
             ) as response:
+                response.raise_for_status()
                 return await response.json()
 
     async def _track_control(self, command):
@@ -600,6 +615,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]
@@ -622,6 +638,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output
@@ -776,6 +793,7 @@ class KefAsyncConnector:
         async with self._session.post(
             "http://" + self.host + "/api/event/modifyQueue", json=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         # Update polling_queue property with queue uuid
@@ -845,6 +863,7 @@ class KefAsyncConnector:
             params=payload,
             timeout=10 + 0.5,  # add 0.5 seconds to timeout to allow for processing
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         # Process all events
@@ -870,6 +889,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["string_"]
@@ -882,6 +902,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["string_"]
@@ -894,6 +915,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["kefSpeakerStatus"]
@@ -924,6 +946,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["i64_"]
@@ -940,6 +963,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["kefPhysicalSource"]
@@ -955,6 +979,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["i32_"]
@@ -972,6 +997,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["string_"]
