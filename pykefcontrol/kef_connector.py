@@ -60,6 +60,7 @@ class KefConnector:
             with requests.post(
                 "http://" + self.host + "/api/setData", json=payload
             ) as response:
+                response.raise_for_status()
                 return response.json()
         else:
             payload = dict(payload)
@@ -67,6 +68,7 @@ class KefConnector:
             with requests.get(
                 "http://" + self.host + "/api/setData", params=payload
             ) as response:
+                response.raise_for_status()
                 return response.json()
 
     def _track_control(self, command):
@@ -125,6 +127,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["i32_"]
@@ -171,6 +174,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_all_default_volumes(self):
@@ -211,6 +215,7 @@ class KefConnector:
                     "http://" + self.host + "/api/getData", params=payload
                 ) as response:
                     if response.status_code == 200:
+                        response.raise_for_status()
                         json_output = response.json()
                         volumes[input_source] = json_output[0]["i32_"]
             except:
@@ -236,6 +241,7 @@ class KefConnector:
             payload = {"path": "settings:/kef/host/maximumVolume", "roles": "value"}
             with requests.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status_code == 200:
+                    response.raise_for_status()
                     settings['max_volume'] = response.json()[0]["i32_"]
         except:
             pass
@@ -245,6 +251,7 @@ class KefConnector:
             payload = {"path": "settings:/kef/host/volumeStep", "roles": "value"}
             with requests.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status_code == 200:
+                    response.raise_for_status()
                     settings['step'] = response.json()[0]["i16_"]
         except:
             pass
@@ -254,6 +261,7 @@ class KefConnector:
             payload = {"path": "settings:/kef/host/volumeLimit", "roles": "value"}
             with requests.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status_code == 200:
+                    response.raise_for_status()
                     settings['limit_enabled'] = response.json()[0]["bool_"]
         except:
             pass
@@ -263,6 +271,7 @@ class KefConnector:
             payload = {"path": "settings:/kef/host/volumeDisplay", "roles": "value"}
             with requests.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status_code == 200:
+                    response.raise_for_status()
                     settings['display'] = response.json()[0]["string_"]
         except:
             pass
@@ -329,6 +338,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # advancedStandbyDefaultVol: false = global, true = per-input
@@ -354,6 +364,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_startup_volume_enabled(self):
@@ -376,6 +387,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["bool_"]
@@ -402,6 +414,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     # Network Diagnostics Methods (Phase 4)
@@ -417,6 +430,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]
@@ -500,6 +514,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output
@@ -568,6 +583,7 @@ class KefConnector:
         with requests.post(
             "http://" + self.host + "/api/event/modifyQueue", json=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # Update polling_queue property with queue uuid
@@ -640,6 +656,7 @@ class KefConnector:
             params=payload,
             timeout=timeout + 0.5,  # add 0.5 seconds to timeout to allow for processing
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # Process all events
@@ -666,6 +683,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["string_"]
@@ -678,6 +696,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["string_"]
@@ -690,6 +709,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["kefSpeakerStatus"]
@@ -718,6 +738,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["kefPhysicalSource"]
@@ -749,6 +770,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["i32_"]
@@ -793,6 +815,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["i64_"]
@@ -810,6 +833,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0]["string_"]
@@ -848,6 +872,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("bool_", False)
@@ -870,6 +895,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_standby_mode(self):
@@ -889,6 +915,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("string_", "standby_20mins")
@@ -917,6 +944,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_startup_tone(self):
@@ -936,6 +964,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("bool_", False)
@@ -958,6 +987,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_subwoofer_wake_on_startup(self):
@@ -977,6 +1007,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("bool_", False)
@@ -1002,6 +1033,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_kw1_wake_on_startup(self):
@@ -1022,6 +1054,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("bool_", False)
@@ -1048,6 +1081,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_wake_source(self):
@@ -1067,6 +1101,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("kefWakeUpSource", "wakeup_default")
@@ -1093,6 +1128,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_usb_charging(self):
@@ -1112,6 +1148,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("bool_", False)
@@ -1134,6 +1171,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_cable_mode(self):
@@ -1153,6 +1191,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("string_", "wired")
@@ -1179,6 +1218,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_master_channel(self):
@@ -1198,6 +1238,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output[0].get("kefMasterChannelMode", "right")
@@ -1224,6 +1265,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
 
@@ -1248,6 +1290,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # Note: API uses "disable" so we invert the boolean
@@ -1277,6 +1320,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_standby_led(self):
@@ -1296,6 +1340,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # Note: API uses "disable" so we invert the boolean
@@ -1321,6 +1366,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_top_panel_enabled(self):
@@ -1340,6 +1386,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         # Note: API uses "disable" so we invert the boolean
@@ -1365,6 +1412,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_top_panel_led(self):
@@ -1386,6 +1434,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
             # Check if response is an error (dict with 'error' key) or empty
             if isinstance(json_output, dict) and 'error' in json_output:
@@ -1412,6 +1461,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     def get_top_panel_standby_led(self):
@@ -1433,6 +1483,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
             # Check if response is an error (dict with 'error' key) or empty
             if isinstance(json_output, dict) and 'error' in json_output:
@@ -1459,6 +1510,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
     # ===== Remote Control Methods =====
@@ -1485,6 +1537,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
             value = json_output[0].get("i32_", -1)
             return None if value < 0 else value
@@ -1513,6 +1566,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
 
@@ -1537,6 +1591,7 @@ class KefConnector:
         with requests.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = response.json()
 
         return json_output
@@ -1601,6 +1656,7 @@ class KefAsyncConnector:
             async with self._session.post(
                 "http://" + self.host + "/api/setData", json=payload
             ) as response:
+                response.raise_for_status()
                 return await response.json()
         else:
             payload = dict(payload)
@@ -1608,6 +1664,7 @@ class KefAsyncConnector:
             async with self._session.get(
                 "http://" + self.host + "/api/setData", params=payload
             ) as response:
+                response.raise_for_status()
                 return await response.json()
 
     async def _track_control(self, command):
@@ -1629,6 +1686,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]
@@ -1651,6 +1709,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output
@@ -1676,6 +1735,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output
@@ -1830,6 +1890,7 @@ class KefAsyncConnector:
         async with self._session.post(
             "http://" + self.host + "/api/event/modifyQueue", json=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         # Update polling_queue property with queue uuid
@@ -1899,6 +1960,7 @@ class KefAsyncConnector:
             params=payload,
             timeout=10 + 0.5,  # add 0.5 seconds to timeout to allow for processing
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         # Process all events
@@ -1924,6 +1986,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["string_"]
@@ -1936,6 +1999,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["string_"]
@@ -1948,6 +2012,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["kefSpeakerStatus"]
@@ -1978,6 +2043,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["i64_"]
@@ -1994,6 +2060,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["kefPhysicalSource"]
@@ -2009,6 +2076,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["i32_"]
@@ -2026,6 +2094,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["string_"]
@@ -2085,6 +2154,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["i32_"]
@@ -2133,6 +2203,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_all_default_volumes(self):
@@ -2175,6 +2246,7 @@ class KefAsyncConnector:
                     "http://" + self.host + "/api/getData", params=payload
                 ) as response:
                     if response.status == 200:
+                        response.raise_for_status()
                         json_output = await response.json()
                         volumes[input_source] = json_output[0]["i32_"]
             except:
@@ -2201,6 +2273,7 @@ class KefAsyncConnector:
             payload = {"path": "settings:/kef/host/maximumVolume", "roles": "value"}
             async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status == 200:
+                    response.raise_for_status()
                     json_output = await response.json()
                     settings['max_volume'] = json_output[0]["i32_"]
         except:
@@ -2211,6 +2284,7 @@ class KefAsyncConnector:
             payload = {"path": "settings:/kef/host/volumeStep", "roles": "value"}
             async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status == 200:
+                    response.raise_for_status()
                     json_output = await response.json()
                     settings['step'] = json_output[0]["i16_"]
         except:
@@ -2221,6 +2295,7 @@ class KefAsyncConnector:
             payload = {"path": "settings:/kef/host/volumeLimit", "roles": "value"}
             async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status == 200:
+                    response.raise_for_status()
                     json_output = await response.json()
                     settings['limit_enabled'] = json_output[0]["bool_"]
         except:
@@ -2231,6 +2306,7 @@ class KefAsyncConnector:
             payload = {"path": "settings:/kef/host/volumeDisplay", "roles": "value"}
             async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
                 if response.status == 200:
+                    response.raise_for_status()
                     json_output = await response.json()
                     settings['display'] = json_output[0]["string_"]
         except:
@@ -2301,6 +2377,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         # advancedStandbyDefaultVol: false = global (All sources), true = per-input (Individual sources)
@@ -2327,6 +2404,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_startup_volume_enabled(self):
@@ -2350,6 +2428,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/getData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
         return json_output[0]["bool_"]
@@ -2377,6 +2456,7 @@ class KefAsyncConnector:
         async with self._session.get(
             "http://" + self.host + "/api/setData", params=payload
         ) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     # Async Network Diagnostics Methods (Phase 4)
@@ -2386,6 +2466,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/autoSwitchToHDMI", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("bool_", False)
 
@@ -2398,6 +2479,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_standby_mode(self):
@@ -2405,6 +2487,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/standbyMode", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("string_", "standby_20mins")
 
@@ -2420,6 +2503,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_startup_tone(self):
@@ -2427,6 +2511,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/startupTone", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("bool_", False)
 
@@ -2439,6 +2524,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_subwoofer_wake_on_startup(self):
@@ -2453,6 +2539,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/subwooferForceOn", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("bool_", False)
 
@@ -2472,6 +2559,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_kw1_wake_on_startup(self):
@@ -2487,6 +2575,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/subwooferForceOnKW1", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("bool_", False)
 
@@ -2507,6 +2596,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_wake_source(self):
@@ -2514,6 +2604,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/wakeUpSource", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("kefWakeUpSource", "wakeup_default")
 
@@ -2529,6 +2620,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_usb_charging(self):
@@ -2536,6 +2628,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/usbCharging", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("bool_", False)
 
@@ -2548,6 +2641,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_cable_mode(self):
@@ -2555,6 +2649,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/cableMode", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("string_", "wired")
 
@@ -2570,6 +2665,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_master_channel(self):
@@ -2577,6 +2673,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/masterChannelMode", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return json_output[0].get("kefMasterChannelMode", "right")
 
@@ -2592,6 +2689,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
 
@@ -2604,6 +2702,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/disableFrontLED", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return not json_output[0].get("bool_", False)
 
@@ -2621,6 +2720,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_standby_led(self):
@@ -2628,6 +2728,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/disableFrontStandbyLED", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return not json_output[0].get("bool_", False)
 
@@ -2641,6 +2742,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_top_panel_enabled(self):
@@ -2648,6 +2750,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/disableTopPanel", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         return not json_output[0].get("bool_", False)
 
@@ -2661,6 +2764,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_top_panel_led(self):
@@ -2672,6 +2776,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/topPanelLED", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
             # Check if response is an error (dict with 'error' key) or empty
             if isinstance(json_output, dict) and 'error' in json_output:
@@ -2689,6 +2794,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     async def get_top_panel_standby_led(self):
@@ -2700,6 +2806,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/topPanelStandbyLED", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
             # Check if response is an error (dict with 'error' key) or empty
             if isinstance(json_output, dict) and 'error' in json_output:
@@ -2717,6 +2824,7 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
     # ===== Remote Control Methods (Async) =====
@@ -2738,6 +2846,7 @@ class KefAsyncConnector:
         payload = {"path": "settings:/kef/host/remote/userFixedVolume", "roles": "value"}
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/getData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
         value = json_output[0].get("i32_", -1)
         return None if value < 0 else value
@@ -2764,5 +2873,6 @@ class KefAsyncConnector:
         }
         await self.resurect_session()
         async with self._session.get("http://" + self.host + "/api/setData", params=payload) as response:
+            response.raise_for_status()
             json_output = await response.json()
 
