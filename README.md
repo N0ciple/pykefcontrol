@@ -37,7 +37,7 @@ pip install pykefcontrol
 You can make sure you have the latest version by typing:
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the latest version is version `0.7.1`
+Currently, the latest version is version `0.9.2`
 
 ## ⚙️ Usage
 
@@ -270,6 +270,15 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **version 0.9.2**
+  - Add LSX II support: `setData` now uses POST for LSX II (matches LS50WII / LSXIILT behavior).
+- **version 0.9.1**
+  - Fix issue with new LSXIILT firmware: `setData` now uses POST for LSXIILT.
+- **version 0.9**
+  - Switch from GET to POST for `setData` on LS50WII.
+- **version 0.8**
+  - Add codec information and WiFi monitoring properties.
+  - Add generic API methods.
 - **version 0.7.1**
   - Fix issue with async version of `get_speaker_model` and `get_firmware_version`.
 - **version 0.7**

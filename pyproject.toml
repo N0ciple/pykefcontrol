@@ -1,6 +1,6 @@
 [project]
 name = "pykefcontrol"
-version = "0.9.1"
+version = "0.9.2"
 description = "Python library for controling KEF speakers (LS50W2, LSX2, LS60). It supports basic commands for setting the volume, the source, and getting the media playing informations."
 authors = [{ name = "Robin Dupont", email = "robin.dpnt@gmail.com" }]
 requires-python = ">=3.10,<4"

@@ -200,11 +200,22 @@ def speaker_info():
     except Exception as e:
         report_github(e)
 
+    try:
+        spkr_model = spkr.speaker_model
+    except Exception as e:
+        spkr_model = "unknown"
+
+    try:
+        spkr_firmware = spkr.firmware_version
+    except Exception as e:
+        spkr_firmware = "unknown"
+
     print("Speaker Infos:")
     print("\tIP:", spkr_ip)
     print(f'\tName: "{spkr_name}"')
     print("\tMAC Address:", spkr_mac_address)
-    print(f"\tModel: [dodger_blue1]{MODEL_LIST[MODEL_SELECTED]}[/dodger_blue1]")
+    print(f"\tModel: [dodger_blue1]{spkr_model}[/dodger_blue1]")
+    print(f"\tFirmware: [dodger_blue1]{spkr_firmware}[/dodger_blue1]")
     newline()
     USER_CONFIRMATION.update(
         user_confirmation(console, "speaker_info", msg="Are the information correct?")
