@@ -130,3 +130,5 @@ dmypy.json
 
 # VScode specific
 .vscode/
+# APK decompilation working directories
+apk/
