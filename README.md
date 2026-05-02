@@ -33,7 +33,7 @@ pip install pykefcontrol
 You can make sure you have the latest version by typing:
 `>>> print(pykefcontrol.__version__)`
 
-Currently, the latest version is version `0.9.2`
+Currently, the latest version is version `0.9.3`
 
 ## ⚙️ Usage
 
@@ -266,6 +266,8 @@ loop.run_until_complete(main())
 - source : use `set_source`
  
 ## 📜 Changelog
+- **version 0.9.3**
+  - Fix LS60 support: `setData` now uses POST for LS60 (matches LS50WII / LSXII behavior).
 - **version 0.9.2**
   - Add LSX II support: `setData` now uses POST for LSX II (matches LS50WII / LSXIILT behavior).
 - **version 0.9.1**

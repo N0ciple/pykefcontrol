@@ -3,7 +3,7 @@ from distutils.core import setup
 setup(
     name="pykefcontrol",
     packages=["pykefcontrol"],
-    version="0.9.2",
+    version="0.9.3",
     license="MIT",
     description="Python library for controling KEF speakers",
     long_description="Python library for controling KEF speakers (LS50W2, LSX2, LS60). It supports basic commands for setting the volume, the source, and getting the media playing informations",
