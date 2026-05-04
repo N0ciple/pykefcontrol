@@ -204,6 +204,376 @@ All the possible keys of the dictionary are:
  `source`, `song_status`, `volume`, `song_info`, `song_length`, `status`, `speaker_status`, `device_name`, `mute` and `other`.
 `other` contains some of the speaker-specific information that might have changed, but are not properties of either `KefConnector` or `KefAsyncConnector`. 
 
+### Volume Management
+
+Control per-input default volumes and volume behavior settings. Each physical input (WiFi, Bluetooth, Optical, etc.) can have its own default volume level, or you can use a global volume for all inputs.
+
+#### Per-Input Default Volumes
+
+Set different default volumes for each input source:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Get default volume for a specific input
+wifi_volume = speaker.get_default_volume('wifi')  # Returns 0-100
+bluetooth_volume = speaker.get_default_volume('bluetooth')
+
+# Set default volume for specific inputs
+speaker.set_default_volume('wifi', 50)       # Set WiFi to 50%
+speaker.set_default_volume('bluetooth', 40)  # Set Bluetooth to 40%
+speaker.set_default_volume('optical', 60)    # Set Optical to 60%
+
+# Get all default volumes at once
+all_volumes = speaker.get_all_default_volumes()
+# Returns: {'global': 30, 'wifi': 50, 'bluetooth': 40, 'optical': 60, ...}
+
+# Print all volumes
+for source, volume in sorted(all_volumes.items()):
+    print(f"{source:12s}: {volume}%")
+```
+
+**Available input sources by model:**
+- **LSX II**: wifi, bluetooth, optical, usb, analogue, tv (6 inputs)
+- **LSX II LT**: wifi, bluetooth, optical, usb, tv (5 inputs)
+- **LS50 Wireless II**: wifi, bluetooth, optical, coaxial, analogue, tv (6 inputs)
+- **LS60 Wireless**: wifi, bluetooth, optical, coaxial, analogue, tv (6 inputs)
+- **XIO Soundbar**: wifi, bluetooth, optical, tv (4 inputs)
+
+#### Volume Behavior Settings
+
+Configure global volume limits and behavior:
+
+```python
+# Get current volume settings
+settings = speaker.get_volume_settings()
+# Returns: {'max_volume': 100, 'step': 1, 'limit': 100, 'display': 'linear'}
+
+# Set maximum volume limit (safety feature for children/hearing protection)
+speaker.set_volume_settings(max_volume=80)  # Limit to 80%
+
+# Set volume step size (how much volume changes per button press)
+speaker.set_volume_settings(step=2)  # Change by 2% per step
+
+# Set volume limiter
+speaker.set_volume_settings(limit=75)  # Soft limit at 75%
+
+# Combine multiple settings
+speaker.set_volume_settings(max_volume=85, step=2, limit=80)
+```
+
+#### Reset Volume (Startup Volume)
+
+The "Reset Volume" feature (called "Startup Volume" in some contexts) controls what volume the speaker uses when waking from standby. This matches the KEF Connect app's "Reset volume" setting.
+
+```python
+# Check if reset volume is enabled
+is_enabled = speaker.get_startup_volume_enabled()
+# Returns: True = enabled, False = disabled (resumes at last volume)
+
+# Enable reset volume feature
+speaker.set_startup_volume_enabled(True)
+
+# Disable reset volume (speaker resumes at last volume level)
+speaker.set_startup_volume_enabled(False)
+```
+
+#### All Sources vs Individual Sources Mode
+
+When reset volume is enabled, choose between "All Sources" (global) or "Individual Sources" (per-input) mode:
+
+```python
+# Check current mode
+is_all_sources = speaker.get_standby_volume_behavior()
+# Returns: True = All Sources, False = Individual Sources
+
+# Set to "All Sources" mode (same reset volume for all inputs)
+speaker.set_standby_volume_behavior(True)
+
+# Set to "Individual Sources" mode (different reset volume per input)
+speaker.set_standby_volume_behavior(False)
+```
+
+**How it works:**
+- **All Sources (True)**: All inputs use the same reset volume (set via `defaultVolumeGlobal`)
+- **Individual Sources (False)**: Each input has its own reset volume (WiFi, Bluetooth, etc.)
+
+#### Async Support
+
+All volume management methods support async:
+
+```python
+import asyncio
+import pykefcontrol as pkf
+
+async def manage_volumes():
+    speaker = pkf.KefAsyncConnector('192.168.1.100')
+
+    # Get all volumes
+    volumes = await speaker.get_all_default_volumes()
+
+    # Set specific input volumes
+    await speaker.set_default_volume('wifi', 45)
+    await speaker.set_default_volume('bluetooth', 35)
+
+    # Configure volume settings
+    await speaker.set_volume_settings(max_volume=80, step=2)
+
+    # Enable reset volume with Individual Sources mode
+    await speaker.set_standby_volume_behavior(False)  # Individual Sources
+    await speaker.set_startup_volume_enabled(True)    # Enable reset volume
+
+asyncio.run(manage_volumes())
+```
+
+
+### System Behavior Settings
+
+Configure speaker power management, startup behavior, and inter-speaker connection settings.
+
+#### Auto-Standby Mode
+
+Control when the speaker automatically enters standby mode:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Get current standby mode
+mode = speaker.get_standby_mode()
+print(f"Current mode: {mode}")  # Returns 'standby_20mins'
+
+# Set standby mode
+speaker.set_standby_mode('standby_20mins')  # ECO mode (20 minutes)
+speaker.set_standby_mode('standby_30mins')  # 30 minutes
+speaker.set_standby_mode('standby_60mins')  # 60 minutes
+speaker.set_standby_mode('standby_none')    # Never auto-standby
+```
+
+**Standby Modes:**
+- `standby_20mins` - ECO mode (shown as "ECO" in KEF Connect app)
+- `standby_30mins` - 30 minutes auto-standby
+- `standby_60mins` - 60 minutes auto-standby
+- `standby_none` - Never auto-standby (manual standby only)
+
+#### Wake Source & HDMI Auto-Switch
+
+Configure which input wakes the speaker and HDMI auto-switching:
+
+```python
+# Set wake source (which input can wake speaker from standby)
+speaker.set_wake_source('wakeup_default')  # All inputs can wake
+speaker.set_wake_source('tv')              # Only TV/HDMI wakes
+speaker.set_wake_source('optical')         # Only optical wakes
+
+# Enable auto-switch to HDMI when signal detected
+speaker.set_auto_switch_hdmi(True)   # Auto-switch enabled
+speaker.set_auto_switch_hdmi(False)  # Manual input selection
+
+# Check current settings
+wake = speaker.get_wake_source()
+auto_hdmi = speaker.get_auto_switch_hdmi()
+print(f"Wake source: {wake}, Auto-HDMI: {auto_hdmi}")
+```
+
+#### Startup Behavior
+
+Control startup tone and USB charging:
+
+```python
+# Disable startup beep
+speaker.set_startup_tone(False)
+
+# Enable USB port charging
+speaker.set_usb_charging(True)
+
+# Check current settings
+tone = speaker.get_startup_tone()
+usb = speaker.get_usb_charging()
+```
+
+#### Inter-Speaker Connection
+
+Configure wired vs wireless connection between left/right speakers:
+
+```python
+# Set cable mode (for stereo pairs)
+speaker.set_cable_mode('wired')     # Use cable connection
+speaker.set_cable_mode('wireless')  # Use wireless connection
+
+# Set master channel designation
+speaker.set_master_channel('left')   # This is the left speaker
+speaker.set_master_channel('right')  # This is the right speaker
+
+# Get current settings
+cable = speaker.get_cable_mode()
+channel = speaker.get_master_channel()
+```
+
+#### Speaker Status
+
+Check if the speaker is powered on or in standby:
+
+```python
+status = speaker.get_speaker_status()
+if status == 'powerOn':
+    print("Speaker is powered on")
+elif status == 'standby':
+    print("Speaker is in standby mode")
+```
+
+#### Complete Configuration Example
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Configure for home theater use
+speaker.set_standby_mode('standby_60mins')  # Long timeout
+speaker.set_wake_source('tv')                # Wake on TV signal
+speaker.set_auto_switch_hdmi(True)           # Auto-switch to HDMI
+speaker.set_startup_tone(False)              # Silent startup
+
+# Configure stereo pair
+speaker.set_cable_mode('wired')              # Use cable for better quality
+speaker.set_master_channel('left')           # Designate as left speaker
+```
+
+#### Async System Behavior
+
+All system behavior methods support async:
+
+```python
+import asyncio
+import pykefcontrol as pkf
+
+async def configure_speaker():
+    speaker = pkf.KefAsyncConnector('192.168.1.100')
+
+    # Get all settings
+    mode = await speaker.get_standby_mode()
+    wake = await speaker.get_wake_source()
+    status = await speaker.get_speaker_status()
+
+    print(f"Standby: {mode}, Wake: {wake}, Status: {status}")
+
+    # Configure settings
+    await speaker.set_standby_mode('standby_30mins')
+    await speaker.set_startup_tone(False)
+
+asyncio.run(configure_speaker())
+```
+
+
+### Do Not Disturb Settings
+
+Control LED indicators and startup behavior to minimize distractions. In the KEF Connect app, these appear under "Do Not Disturb" settings.
+
+**Important Note:** The API endpoints work on all KEF W2 platform speakers, but the physical effects vary by model:
+- **LSX II / LSX II LT / LS50 W2 / LS60**: Only standby LED and startup tone are exposed in KEF Connect app
+- **XIO Soundbar**: Full control panel LED controls (4 settings: control panel LED, control panel in standby, startup tone, control panel lock)
+
+#### Standby LED
+
+Control whether the LED indicator is visible when the speaker is in standby mode:
+
+```python
+import pykefcontrol as pkf
+
+speaker = pkf.KefConnector('192.168.1.100')
+
+# Enable standby LED (default)
+speaker.set_standby_led(True)
+
+# Disable standby LED (for dark rooms)
+speaker.set_standby_led(False)
+
+# Check current setting
+enabled = speaker.get_standby_led()
+print(f"Standby LED: {'On' if enabled else 'Off'}")
+```
+
+**Async version:**
+```python
+enabled = await speaker.get_standby_led()
+await speaker.set_standby_led(False)
+```
+
+#### Startup Tone
+
+Control the audible beep when powering on (also in System Behavior Settings):
+
+```python
+# Disable startup beep for silent power-on
+speaker.set_startup_tone(False)
+
+# Enable startup beep
+speaker.set_startup_tone(True)
+
+# Check current setting
+enabled = speaker.get_startup_tone()
+```
+
+#### XIO Soundbar: Control Panel LED Controls
+
+The XIO soundbar has exclusive control panel LED settings (4 controls shown in KEF Connect app under "Do Not Disturb"). The `set_top_panel_*` methods only work on XIO models.
+
+> **Note:** The `get/set_front_led()` methods exist for all models but have no visible effect on any currently tested speakers (LSX II, LSX II LT, XIO). The API field exists in firmware but appears to have no hardware implementation. These methods are kept for completeness in case future models support this feature.
+
+```python
+# Control panel LED during operation
+speaker.set_front_led(True)   # LED on during operation (default)
+speaker.set_front_led(False)  # LED off during operation
+
+# Control panel LED in standby
+speaker.set_top_panel_standby_led(True)   # LED on in standby
+speaker.set_top_panel_standby_led(False)  # LED off in standby
+
+# Enable/disable top panel entirely (control panel lock)
+speaker.set_top_panel_enabled(True)   # Panel active (default)
+speaker.set_top_panel_enabled(False)  # Panel locked/disabled
+
+# Check current settings
+front_led = speaker.get_front_led()
+panel_enabled = speaker.get_top_panel_enabled()
+standby_led = speaker.get_top_panel_standby_led()
+
+print(f"Front LED: {front_led}, Panel enabled: {panel_enabled}, Standby LED: {standby_led}")
+```
+
+**XIO Async version:**
+```python
+# XIO-specific async methods
+await speaker.set_front_led(False)
+await speaker.set_top_panel_standby_led(False)
+await speaker.set_top_panel_enabled(False)
+```
+
+#### Complete Do Not Disturb Configuration
+
+```python
+import pykefcontrol as pkf
+
+# Configure LSX II for bedroom use (minimal LEDs)
+lsx_speaker = pkf.KefConnector('192.168.1.100')  # LSX II
+lsx_speaker.set_standby_led(False)    # No standby indicator
+lsx_speaker.set_startup_tone(False)   # Silent power-on
+
+# Configure XIO for home theater (all LEDs off)
+xio_speaker = pkf.KefConnector('192.168.1.101')  # XIO Soundbar
+xio_speaker.set_standby_led(False)              # No standby LED
+xio_speaker.set_startup_tone(False)             # Silent power-on
+xio_speaker.set_front_led(False)                # Control panel off during operation
+xio_speaker.set_top_panel_standby_led(False)    # Control panel off in standby
+xio_speaker.set_top_panel_enabled(False)        # Lock control panel (optional)
+```
+
+
+
 #### Advanced features
 This function is used internally by pykefcontrol and returns a JSON output with a lot of information. You might want to use them to get extra information such as the artwork/album cover URL, which does not have a dedicated function _yet_ in pykefcontrol.
 
