@@ -8,6 +8,11 @@ import warnings
 
 _POST_MODELS = {"LS50WII", "LSXIILT", "LSXII", "LS60"}
 _MODEL_ALIASES = {"LS50W2": "LS50WII", "LSX2LT": "LSXIILT", "LSX2": "LSXII"}
+_SOURCE_ALIASES = {"optic": "optical"}
+
+
+def _normalize_source(source):
+    return _SOURCE_ALIASES.get(source, source)
 
 
 class KefConnector:
@@ -390,7 +395,7 @@ class KefConnector:
     def source(self):
         """
         Speaker source : standby (not powered on),
-        wifi, bluetooth, tv, optic, coaxial or analog
+        wifi, bluetooth, tv, optical, coaxial or analog
         """
         payload = {
             "path": "settings:/kef/play/physicalSource",
@@ -408,8 +413,10 @@ class KefConnector:
     def source(self, source):
         """
         Set spaker source, if speaker in standby, it powers on the speaker.
-        Possible sources : wifi, bluetooth, tv, optic, coaxial or analog
+        Possible sources : wifi, bluetooth, tv, optical, coaxial or analog.
+        The legacy value "optic" is accepted as an alias for "optical".
         """
+        source = _normalize_source(source)
         payload = {
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
@@ -656,7 +663,9 @@ class KefAsyncConnector:
 
     async def set_source(self, source):
         """Set spaker source, if speaker in standby, it powers on the speaker.
-        Possible sources : wifi, bluetooth, tv, optic, coaxial or analog"""
+        Possible sources : wifi, bluetooth, tv, optical, coaxial or analog.
+        The legacy value "optic" is accepted as an alias for "optical"."""
+        source = _normalize_source(source)
         payload = {
             "path": "settings:/kef/play/physicalSource",
             "roles": "value",
@@ -930,7 +939,7 @@ class KefAsyncConnector:
 
     @property
     async def source(self):
-        """Speaker soe : standby (not powered on), wifi, bluetooth, tv, optic,
+        """Speaker soe : standby (not powered on), wifi, bluetooth, tv, optical,
         coaxial or analog"""
         payload = {
             "path": "settings:/kef/play/physicalSource",
