@@ -379,9 +379,9 @@ class KefConnector:
     @status.setter
     def status(self, status):
         payload = {
-            "path": "settings:/kef/play/physicalSource",
+            "path": "settings:/kef/host/speakerStatus",
             "roles": "value",
-            "value": {"type": "kefPhysicalSource", "kefPhysicalSource": status},
+            "value": {"type": "kefSpeakerStatus", "kefSpeakerStatus": status},
         }
 
         self._set_data(payload)
@@ -675,9 +675,9 @@ class KefAsyncConnector:
 
     async def set_status(self, status):
         payload = {
-            "path": "settings:/kef/play/physicalSource",
+            "path": "settings:/kef/host/speakerStatus",
             "roles": "value",
-            "value": {"type": "kefPhysicalSource", "kefPhysicalSource": status},
+            "value": {"type": "kefSpeakerStatus", "kefSpeakerStatus": status},
         }
         await self._set_data(payload)
 
