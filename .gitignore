@@ -134,3 +134,8 @@ dmypy.json
 result
 result-*
 .direnv/
+
+# KEF app (APK) and its decompilation, for reverse-engineering only. Never commit.
+kef-app/
+*.apk
+*.xapk
