@@ -1,6 +1,0 @@
-# Pykefcontrol requirements
-requests>=2.26.0
-aiohttp>=3.7.4
-
-# Testing specific requirements
-rich
