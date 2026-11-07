@@ -296,6 +296,37 @@ async def test_eq_descriptors_use_get_rows(client: Any, fake: FakeSpeaker) -> No
     assert req.query == {"path": "kef:dsp/editValue", "roles": "@all", "from": "0", "to": "100"}
 
 
+def _treble_row(minimum: float, maximum: float) -> dict[str, Any]:
+    return {
+        "name": "trebleAmount",
+        "descriptor": {"format": "range", "range": {"min": minimum, "max": maximum, "step": 0.5}},
+    }
+
+
+async def test_eq_validation_uses_speaker_ranges(client: Any, fake: FakeSpeaker) -> None:
+    fake.store["kef:eqProfile/v2"] = typed("kefEqProfileV2", v2_inner())
+    fake.rows["kef:dsp/editValue"] = [_treble_row(-6, 6)]  # wider than the app's -3..3
+    profile = await client.update_eq_profile(treble=5.0)
+    assert profile.treble == 5.0
+    assert (await client.get_eq_ranges())["treble"].maximum == 6
+
+
+async def test_eq_validation_rejects_outside_speaker_ranges(client: Any, fake: FakeSpeaker) -> None:
+    fake.store["kef:eqProfile/v2"] = typed("kefEqProfileV2", v2_inner())
+    fake.rows["kef:dsp/editValue"] = [_treble_row(-2, 2)]
+    with pytest.raises(ValueError):
+        await client.update_eq_profile(treble=2.5)
+    assert fake.set_data_calls() == []
+
+
+async def test_eq_ranges_fall_back_to_defaults(client: Any, fake: FakeSpeaker) -> None:
+    fake.store["kef:eqProfile/v2"] = typed("kefEqProfileV2", v2_inner())
+    # no descriptor rows: the speaker answers an error, the app defaults apply (not cached)
+    assert (await client.get_eq_ranges())["treble"].maximum == 3
+    fake.rows["kef:dsp/editValue"] = [_treble_row(-6, 6)]
+    assert (await client.get_eq_ranges())["treble"].maximum == 6
+
+
 async def test_get_rows(client: Any, fake: FakeSpeaker) -> None:
     fake.rows["browse:"] = [{"title": str(i)} for i in range(5)]
     data = await client.get_rows("browse:", 1, 2)

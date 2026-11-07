@@ -314,16 +314,14 @@ Values are in real units: dB, Hz.
 | `profile_name`, `profile_id` | str | empty for the default profile |
 
 Values are checked before being sent and a `ValueError` is raised if one is out of range
-(`set_eq_profile(..., validate=False)` to skip). These ranges are the app's defaults. The exact ranges of
-your speaker are available with `get_eq_descriptors()`:
+(`set_eq_profile(..., validate=False)` to skip). The ranges are the ones your speaker advertises when it
+does (EQ v2), else the app's defaults (the table above):
 
 ```python
-from pykefcontrol.eq import ranges_from_descriptors, validate_eq_profile
-
-descriptors = await speaker.get_eq_descriptors()
-descriptors["trebleAmount"].range
+ranges = await speaker.get_eq_ranges()
+ranges["treble"]
 # -> EqRange(minimum=-3.0, maximum=3.0, step=0.25, default=0.0)
-validate_eq_profile(profile, ranges_from_descriptors(descriptors))
+descriptors = await speaker.get_eq_descriptors()   # raw descriptors, incl. the allowed choices
 ```
 
 ### Subwoofer presets

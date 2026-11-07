@@ -120,6 +120,7 @@ class KefClient:
         self._detected = False
         self._last_source: Source | None = None
         self._eq_version: int | None = None
+        self._eq_ranges: dict[str, eq.EqRange] | None = None
         self._eq_lock = backend.create_lock()
         self._queue_id: str | None = None
         self._subscriptions: dict[str, Subscription] = {}
@@ -453,9 +454,11 @@ class KefClient:
         (the default), return only once the speaker reports the new profile (or after
         :data:`~pykefcontrol.const.EQ_APPLY_TIMEOUT` seconds), so that a following
         read, or :meth:`update_eq_profile`, sees it.
+
+        With ``validate``, values are checked against :meth:`get_eq_ranges`.
         """
         if validate:
-            eq.validate_eq_profile(profile)
+            eq.validate_eq_profile(profile, self.get_eq_ranges())
         version = self.get_eq_version()
         path = paths.EQ_PROFILE_V2 if version == 2 else paths.EQ_PROFILE
         self.set_data(path, eq.eq_profile_to_api(profile, version))
@@ -493,6 +496,23 @@ class KefClient:
     def get_eq_descriptors(self) -> dict[str, eq.EqDescriptor]:
         """Ranges / choices advertised by the speaker for each EQ setting (EQ v2 only)."""
         return eq.parse_eq_descriptors(self.get_rows(paths.EQ_FORMAT, 0, 100))
+
+    def get_eq_ranges(self) -> dict[str, eq.EqRange]:
+        """Allowed range of each numeric EQ field (cached).
+
+        The speaker's own ranges (EQ v2 descriptors) where it advertises them, the
+        app's defaults (:data:`~pykefcontrol.eq.DEFAULT_RANGES`) otherwise.
+        """
+        if self._eq_ranges is None:
+            ranges = dict(eq.DEFAULT_RANGES)
+            if self.get_eq_version() == 2:
+                try:
+                    ranges.update(eq.ranges_from_descriptors(self.get_eq_descriptors()))
+                except KefError as err:
+                    _LOGGER.debug("%s: no EQ descriptors (%s), using defaults", self.host, err)
+                    return ranges  # not cached: retried on the next call
+            self._eq_ranges = ranges
+        return self._eq_ranges
 
     # --- state snapshot -----------------------------------------------------------
 
