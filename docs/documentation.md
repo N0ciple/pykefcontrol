@@ -235,7 +235,7 @@ await speaker.bluetooth_disconnect()
 ```python
 info = await speaker.get_device_info()
 info.name, info.model, info.serial_number, info.mac_address
-# -> ('Gramophone', SpeakerModel.LS50_WIRELESS_II, 'LSW0202908M42R2G', '84:17:15:15:0A:94')
+# -> ('Living room', SpeakerModel.LS50_WIRELESS_II, 'LSW0123456789ABC', '84:17:15:00:00:01')
 info.firmware.major, info.firmware.minor, info.firmware.patch
 # -> (4, 1, 192)
 
@@ -460,7 +460,7 @@ from pykefcontrol.discovery import discover
 
 for found in await discover(timeout=3.0):               # discover_blocking() without asyncio
     print(found.host, found.name, found.marketing_name)
-# -> 192.168.1.20 Gramophone LS50 Wireless II
+# -> 192.168.1.20 Living room LS50 Wireless II
 ```
 
 For zeroconf integrations, `parse_service_info()` turns a `_kef-info._tcp` record into the same
