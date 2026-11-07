@@ -1,6 +1,6 @@
 [project]
 name = "pykefcontrol"
-version = "1.0.0a1"
+version = "1.0.0"
 description = "Python library to control KEF W2-platform wireless speakers (LS50 Wireless II, LS60, LSX II, LSX II LT, XIO, LS LUXE) over the local network, sync or async."
 authors = [{ name = "Robin Dupont", email = "robin.dpnt@gmail.com" }]
 requires-python = ">=3.12"
@@ -20,7 +20,7 @@ keywords = [
     "home-assistant",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Topic :: Home Automation",
     "Framework :: AsyncIO",
@@ -47,6 +47,8 @@ pykefcontrol = "pykefcontrol.__main__:main"
 Homepage = "https://github.com/N0ciple/pykefcontrol"
 Repository = "https://github.com/N0ciple/pykefcontrol"
 Changelog = "https://github.com/N0ciple/pykefcontrol/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/N0ciple/pykefcontrol/blob/main/docs/documentation.md"
+Issues = "https://github.com/N0ciple/pykefcontrol/issues"
 
 [dependency-groups]
 dev = [

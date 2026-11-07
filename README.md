@@ -5,8 +5,9 @@ Python library to control KEF wireless speakers (W2 platform) over the local net
 It provides an `asyncio` client and a blocking client with the same API, and covers power, sources,
 volume, playback, EQ/DSP settings, speaker settings and live updates pushed by the speaker.
 
-> **1.0 alpha.** Version 1.0 is a full rewrite, validated so far on an LS50 Wireless II (firmware 4.1.192).
-> Upgrading from 0.9? See the [migration guide](MIGRATION.md).
+> Version 1.0 is a full rewrite with breaking changes: upgrading from 0.9? See the
+> [migration guide](https://github.com/N0ciple/pykefcontrol/blob/main/MIGRATION.md). It has been validated on an LS50 Wireless II (firmware 4.1.192);
+> reports for other models are welcome.
 
 ## Supported speakers
 
@@ -61,9 +62,9 @@ A command line tool is included: `pykefcontrol --help`.
 
 ## Documentation
 
-- [Documentation](docs/documentation.md): complete guide and reference
-- [Migration guide](MIGRATION.md): upgrading from 0.9
-- [Changelog](CHANGELOG.md)
+- [Documentation](https://github.com/N0ciple/pykefcontrol/blob/main/docs/documentation.md): complete guide and reference
+- [Migration guide](https://github.com/N0ciple/pykefcontrol/blob/main/MIGRATION.md): upgrading from 0.9
+- [Changelog](https://github.com/N0ciple/pykefcontrol/blob/main/CHANGELOG.md)
 
 For Home Assistant, see [hass-kef-connector](https://github.com/N0ciple/hass-kef-connector).
 

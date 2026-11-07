@@ -3,11 +3,11 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
-## [1.0.0a1] - Unreleased
+## [1.0.0] - 2026-11-07
 
 Full rewrite. This release contains breaking changes, see the [migration guide](MIGRATION.md).
-It was rebuilt from the behaviour of the official KEF Connect app and has not yet been validated on
-every speaker model.
+It was rebuilt from the behaviour of the official KEF Connect app and validated on an LS50 Wireless II
+(firmware 4.1.192); other models are supported from the app's data but not yet tested on hardware.
 
 ### Added
 
@@ -30,7 +30,7 @@ every speaker model.
 - Device information and capabilities: `get_device_info()`, `get_capabilities()` (`SpeakerModel`,
   `Capabilities`, `Feature`, `FirmwareVersion`), `get_network_info()`, `get_mac_address()`.
 - Equalizer / DSP: `get_eq_profile()`, `set_eq_profile()`, `update_eq_profile()`, `reset_eq_profile()`,
-  `get_eq_descriptors()`, `get_eq_version()`. Both profile formats (v1 indices, v2 values) are handled
+  `get_eq_descriptors()`, `get_eq_ranges()`, `get_eq_version()`. Writes are validated against the speaker's own ranges. Both profile formats (v1 indices, v2 values) are handled
   transparently. The speaker applies EQ writes asynchronously, so `set_eq_profile()` waits until it
   reports the new profile (`wait=False` to skip) and `update_eq_profile()` calls are serialized.
 - Typed `Settings` catalogue with `get_setting()` / `set_setting()` (validated, range-checked).
@@ -165,5 +165,5 @@ Bugs of 0.9.3 that no longer exist in the rewrite:
 
 - First version.
 
-[1.0.0a1]: https://github.com/N0ciple/pykefcontrol/compare/v0.9.3...HEAD
-[0.9.3]: https://github.com/N0ciple/pykefcontrol/releases/tag/v0.9.3
+[1.0.0]: https://github.com/N0ciple/pykefcontrol/compare/0.9.3...1.0.0
+[0.9.3]: https://github.com/N0ciple/pykefcontrol/releases/tag/0.9.3
