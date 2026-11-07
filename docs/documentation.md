@@ -547,7 +547,10 @@ sent.
 - **Standby**: a speaker in standby still answers on the network, so you can read its state and wake it up.
 - **Power on**: the API has no "power on" command. Selecting a source is what wakes the speaker up, which
   is why `power_on()` takes a source.
-- **Unmute**: on the LS50 Wireless II, unmuting may restore the volume the speaker had when it was muted.
+- **Default volume per input**: if "default volume" is enabled in the KEF app, the speaker sets its own
+  volume about one second after waking up or changing input. A `set_volume()` sent right after
+  `power_on()` / `set_source()` can be overridden: wait for the volume change (e.g. with `watch()`) or
+  a second or two before setting the volume.
 - **Logs**: the library logs under the `pykefcontrol` logger. Enable `DEBUG` to see the transport chosen,
   reconnections, etc.
 - **Concurrency**: one async client can be shared by several tasks.
