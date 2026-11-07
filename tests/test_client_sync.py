@@ -267,6 +267,18 @@ def test_eq_version_2_and_update_roundtrip(client: Any, fake: FakeSpeaker) -> No
     assert got.treble == 1.5
 
 
+def test_eq_write_waits_until_applied(client: Any, fake: FakeSpeaker) -> None:
+    # The real speaker applies EQ writes asynchronously: successive read-modify-write
+    # updates must not lose each other's changes.
+    fake.store["kef:eqProfile/v2"] = typed("kefEqProfileV2", v2_inner())
+    fake.apply_delay["kef:eqProfile/v2"] = 0.2
+    client.update_eq_profile(treble=1.5)
+    assert (client.get_eq_profile()).treble == 1.5
+    client.update_eq_profile(bass_extension=BassExtension.LESS)
+    got = client.get_eq_profile()
+    assert (got.treble, got.bass_extension) == (1.5, BassExtension.LESS)
+
+
 def test_eq_v1_profile(client: Any, fake: FakeSpeaker) -> None:
     fake.store["kef:eqProfile"] = typed("kefEqProfile", v1_inner())
     assert client.get_eq_version() == 1

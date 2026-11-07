@@ -31,7 +31,8 @@ every speaker model.
   `Capabilities`, `Feature`, `FirmwareVersion`), `get_network_info()`, `get_mac_address()`.
 - Equalizer / DSP: `get_eq_profile()`, `set_eq_profile()`, `update_eq_profile()`, `reset_eq_profile()`,
   `get_eq_descriptors()`, `get_eq_version()`. Both profile formats (v1 indices, v2 values) are handled
-  transparently.
+  transparently. The speaker applies EQ writes asynchronously, so `set_eq_profile()` waits until it
+  reports the new profile (`wait=False` to skip) and `update_eq_profile()` calls are serialized.
 - Typed `Settings` catalogue with `get_setting()` / `set_setting()` (validated, range-checked).
 - Raw API: `get_data()`, `get_value()`, `set_data()`, `set_value()`, `activate()`, `get_rows()`, and the
   `pykefcontrol.paths` constants.

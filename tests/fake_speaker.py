@@ -268,6 +268,8 @@ class FakeSpeaker:
     * ``overrides``: API path -> fixed (status, body) answer, for error cases.
     * ``new_queue_on_modify``: next ``modifyQueue`` returns a *new* queue id even if
       an existing one is passed (the speaker "lost" the queue).
+    * ``apply_delay``: API path -> seconds before a ``setData`` value becomes
+      visible (the real speaker applies EQ profile writes ~70 ms later).
     """
 
     def __init__(self, *, require_auth: bool = False, max_poll_wait: float = 0.2) -> None:
@@ -287,6 +289,7 @@ class FakeSpeaker:
         self.max_poll_wait = max_poll_wait
         self.overrides: dict[str, tuple[int, bytes]] = {}
         self.new_queue_on_modify = False
+        self.apply_delay: dict[str, float] = {}
 
     # --- lifecycle ---------------------------------------------------------------
 
@@ -435,8 +438,14 @@ class FakeSpeaker:
         value = payload.get("value")
         with self.cond:
             if role == "value":
-                self.store[path] = value
-                self._notify(path, value)
+                delay = self.apply_delay.get(path)
+                if delay:
+                    timer = threading.Timer(delay, self.set, (path, value))
+                    timer.daemon = True
+                    timer.start()
+                else:
+                    self.store[path] = value
+                    self._notify(path, value)
             elif role == "activate":
                 self.activations.append((path, value))
                 if path == "webserver:addUser":

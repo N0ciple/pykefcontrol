@@ -103,9 +103,10 @@ class KefClient:
         http_port: int = const.HTTP_PORT,
         https_port: int = const.HTTPS_PORT,
     ) -> None:
+        backend = SyncBackend(session)
         self._transport = SyncTransport(
             host,
-            SyncBackend(session),
+            backend,
             mode=transport,
             credentials=credentials,
             verify_ssl=verify_ssl,
@@ -119,6 +120,7 @@ class KefClient:
         self._detected = False
         self._last_source: Source | None = None
         self._eq_version: int | None = None
+        self._eq_lock = backend.create_lock()
         self._queue_id: str | None = None
         self._subscriptions: dict[str, Subscription] = {}
 
@@ -441,22 +443,47 @@ class KefClient:
         raw = self.get_data(paths.EQ_PROFILE_V2 if version == 2 else paths.EQ_PROFILE)
         return eq.parse_eq_profile(raw)
 
-    def set_eq_profile(self, profile: eq.EqProfile, *, validate: bool = True) -> None:
-        """Write a whole EQ profile (the official app always writes the whole profile)."""
+    def set_eq_profile(
+        self, profile: eq.EqProfile, *, validate: bool = True, wait: bool = True
+    ) -> None:
+        """Write a whole EQ profile (the official app always writes the whole profile).
+
+        The speaker applies EQ writes asynchronously (~70 ms on an LS50 Wireless II):
+        a read right after the write still returns the old profile. With ``wait``
+        (the default), return only once the speaker reports the new profile (or after
+        :data:`~pykefcontrol.const.EQ_APPLY_TIMEOUT` seconds), so that a following
+        read, or :meth:`update_eq_profile`, sees it.
+        """
         if validate:
             eq.validate_eq_profile(profile)
         version = self.get_eq_version()
         path = paths.EQ_PROFILE_V2 if version == 2 else paths.EQ_PROFILE
         self.set_data(path, eq.eq_profile_to_api(profile, version))
+        if wait:
+            self._wait_eq_profile(profile)
+
+    def _wait_eq_profile(self, expected: eq.EqProfile) -> None:
+        deadline = time.monotonic() + const.EQ_APPLY_TIMEOUT
+        while True:
+            self._transport.sleep(const.EQ_APPLY_POLL_INTERVAL)
+            if self.get_eq_profile() == expected:
+                return
+            if time.monotonic() >= deadline:
+                _LOGGER.debug("%s: EQ profile not confirmed by the speaker", self.host)
+                return
 
     def update_eq_profile(self, **changes: Any) -> eq.EqProfile:
         """Change some EQ fields (read, modify, write). Returns the new profile.
 
+        Calls are serialized, so concurrent updates of different fields don't
+        overwrite each other.
+
         >>> speaker.update_eq_profile(treble=1.5, bass_extension=BassExtension.EXTRA)
         """
-        profile = (self.get_eq_profile()).replace(**changes)
-        self.set_eq_profile(profile)
-        return profile
+        with self._eq_lock:
+            profile = (self.get_eq_profile()).replace(**changes)
+            self.set_eq_profile(profile)
+            return profile
 
     def reset_eq_profile(self) -> None:
         """Restore the default DSP settings."""

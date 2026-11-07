@@ -44,6 +44,10 @@ PROBE_PATH: Final = "settings:/deviceName"
 #: Minimum interval between two polls when the speaker answers immediately (seconds).
 MIN_POLL_INTERVAL: Final = 1.0
 
+# EQ writes are applied asynchronously by the speaker (~70 ms measured on an LS50WII).
+EQ_APPLY_TIMEOUT: Final = 2.0
+EQ_APPLY_POLL_INTERVAL: Final = 0.05
+
 #: Reconnection back-off of :meth:`watch` / :meth:`events` (seconds).
 RECONNECT_DELAY_MIN: Final = 1.0
 RECONNECT_DELAY_MAX: Final = 30.0
