@@ -1,311 +1,392 @@
-# 🔉 pykefcontrol 
-Python library for controlling KEF speakers : LS50WII, LSX II and LS60
+# pykefcontrol
 
-⚠️ **Read the changelog to see breaking changes.**
-For the **async** version, please read [this section](#️-specificity-of-kefasyncconnector)
+Python library to control **KEF W2-platform wireless speakers** over the local network, with both an
+`asyncio` client and a blocking client sharing the same API.
 
-🏠️ **For the Home Assistant integration, please see [hass-kef-connector](https://github.com/N0ciple/hass-kef-connector)**
+> **Status: 1.0 alpha (`1.0.0a1`).** Version 1.0 is a full rewrite. It was rebuilt from the behaviour of
+> the official KEF Connect app and validated so far on an LS50 Wireless II (firmware 4.1.192, HTTPS mode).
+> Bug reports and feedback for other models / firmware (ideally with the output of
+> `pykefcontrol diag <ip>`) are very welcome.
+> Coming from 0.9? Read the [migration guide](MIGRATION.md).
 
-- [🔉 pykefcontrol](#-pykefcontrol)
-  - [📄 General Informations](#-general-informations)
-  - [⬇️ Installation](#️-installation)
-  - [⚙️ Usage](#️-usage)
-    - [👨‍💻 Get the IP address](#-get-the-ip-address)
-    - [🎚️ Control the speaker with pykefcontrol](#️-control-the-speaker-with-pykefcontrol)
-      - [First Step](#first-step)
-      - [Available features](#available-features)
-      - [Advanced features](#advanced-features)
-  - [🕵️ Specificity of `KefAsyncConnector`](#️-specificity-of-kefasyncconnector)
-    - [Renaming of property setters](#renaming-of-property-setters)
-  - [📜 Changelog](#-changelog)
-  
+Looking for Home Assistant? See [hass-kef-connector](https://github.com/N0ciple/hass-kef-connector).
 
-## 📄 General Informations 
-This library works with the KEF LS50 Wireless II, LSX II and LS60 only. If you are searching for a library for the first generation LS50W or LSX, you can use [aiokef](https://github.com/basnijholt/aiokef).
-Pykefcontrol has 2 main components: `KefConnector` and `KefAsyncConnector`. The first one can be used in all classic scripts and python programs, whereas the second one (`KefAsyncConnector`) can be used in asynchronous programs.
+## Supported speakers
 
-## ⬇️ Installation 
-To install pykefcontrol, you can use pip : 
+| Speaker | Supported |
+|---|---|
+| KEF LS50 Wireless II | yes |
+| KEF LS60 Wireless | yes |
+| KEF LSX II | yes |
+| KEF LSX II LT | yes |
+| KEF XIO (soundbar) | yes |
+| KEF LS LUXE | yes |
+| Future W2-platform speakers | best effort (generic mode, every feature allowed; the speaker refuses what it cannot do) |
+| KEF Coda W, KEF Muo | **no**: Bluetooth-only, they have no network API |
+| First generation LS50 Wireless / LSX | **no**: use [aiokef](https://github.com/basnijholt/aiokef) |
+
+## Installation
+
 ```shell
 pip install pykefcontrol
+# optional: network discovery of speakers (mDNS)
+pip install "pykefcontrol[discovery]"
 ```
 
-You can make sure you have the latest version by typing:
-`>>> print(pykefcontrol.__version__)`
+Requires Python 3.12 or newer. Runtime dependencies: `aiohttp` (async client) and `urllib3` (blocking client).
 
-Currently, the latest version is version `0.9.3`
+## Quick start
 
-## ⚙️ Usage
+You need the speaker's IP address: check your router, or in the KEF Connect app go to settings, tap your
+speaker, then the "i" icon. Giving the speaker a fixed IP (DHCP reservation) is recommended. You can also
+[discover it](#discovery).
 
-### 👨‍💻 Get the IP address
-To use the pykefcontrol library, you need to know the IP address of your speakers. To do so, you can have a look at your router web page, or check in the KEF Connect app by doing the following :
- 1. Launch the KEF Connect app
- 2. Tap the gear icon on the bottom right
- 3. Then your speaker name (It should be right below your profile information)
- 4. Finally, the little circled "i" next to your speaker name in the _My Speakers_ section
- 5. You should find your IP address in the "IP address" section under the form `www.xxx.yyy.zzz`, where `www`, `xxx`, `yyy` and `zzz` are integers between `0` and `255`.
-
-### 🎚️ Control the speaker with pykefcontrol
-Once pykefcontrol is installed and you have your KEF Speaker IP address, you can use pykefcontrol in the following way :
-
-#### First Step
-
-☝️ _For the **async** version, please read the section_ [🕵️ Specificity of `KefAsyncConnector`](#️-specificity-of-kefasyncconnector).
-
-First, import the class and create a `KefConnector` object :
-```python
-from pykefcontrol.kef_connector import KefConnector
-my_speaker = KefConnector("www.xxx.yyy.zzz")
-```
-⚠️ Do not forget to replace `www.xxx.yyy.zzz` with your speaker IP address. You should give your IP address as a string. It's to say that you should leave the quotation marks `"` around the IP address
-
-#### Available features
-
-Once the `my_speaker` object is created, you can use it in the following ways :
-
-**Power, Shutdown and Status**
-```python
-# Power on
-my_speaker.power_on() 
-
-# Shutdown
-my_speaker.shutdown() 
-
-# Get speaker status : it returns a string ('powerOn' or 'standby')
-my_speaker.status # it is not a method so it does not requires parenthesis
-# (output example) >>> 'powerOn'
-
-```
-
-**Speaker Info**
-```python
-# Get the speaker MAC hardress
-my_speaker.mac_address
-# (output example) >>> 'AB:CD:EF:12:13:45'
-
-# Get the speaker friendly name if configured
-my_speaker.speaker_name
-# (output example) >>> 'My Kef LS50W2'
-
-# Get the speaker model
-my_speaker.speaker_model
-# (output example) >>> 'LS50WII'
-
-# Get the firmware version
-my_speaker.firmware_version
-# (output example) >>> 'V27100'
-```
-
-**Source Control**
-```python
-# Get currently selected source : it returns a string ('wifi', 'bluetooth', 'tv', 'optical', 'coaxial', 'analog')
-# If the speaker is not powered on, it will return 'standby'
-my_speaker.source # it is not a method so it does not requires parenthesis
-# (output example) >>> 'wifi'
-
-# Set the input source 
-# If the speaker is shutdown, setting a source will power it on
-my_speaker.source = 'wifi' # 'wifi is an example, you can use any other supported string 'tv', 'analog', etc..
-```
-
-**Control playback**
-```python
-# Toggle play/pause
-my_speaker.toggle_play_pause() 
-
-# Next track
-my_speaker.next_track()
-
-# Previous track
-my_speaker.previous_track()
-```
-
-**Control volume**
-```python
-# Muste speaker
-my_speaker.mute() 
-
-# Unmute speaker
-my_speaker.unmute()
-
-# Get volume : it reruns an integer between 0 and 100
-my_speaker.volume # it is not a method so it does not require parenthesis
-# (output example) >>> 23
-
-# Set volume
-my_speaker.volume = 42 # 42 for example but it can by any integer between 0 and 100.
-
-# Set volume (alternative way)
-my_speaker.set_volume(42) # 42 for example but it can by any integer between 0 and 100.
-```
-
-**Playback info**
-```python
-# Check if the speaker is playing : it returns a boolean (either True or False)
-my_speaker.is_playing # it is not a method so it does not require parenthesis
-# (output example) >>> True
-
-# Get current media information : it retuns a dictionnary 
-# (works on songs/podcast/radio. It may works on other media but I have not tested it yet)
-my_speaker.get_song_information()
-# (output example) >>> {'title':'Money','artist':'Pink Floyd','album':'The Dark Side of the Moon','cover_url':'http://cover.url'}
-
-# Get media length in miliseconds : it returns an integer representing the song length in ms
-my_speaker.song_length # it is not a method so it does not require parenthesis
-# (output example) >>> 300251
-
-# Get song progress : it returns the current playhead position in the current track in ms
-my_speaker.song_status # it is not a method so it does not require parenthesis
-# (output example) >>> 136900
-```
-
-**Information polling**
-
-Pykefcontrol offers a polling functionality. Instead of manually fetching all parameters to see what has changed, you can use the method `poll_speaker`. This method returns the updated properties since the last time the changes were polled. If multiple changes are made to the same property, only the last change will be kept. It is technically possible to track all the changes to a property since the last poll, although it is not implemented. Please submit an issue if you need such a feature.
-`poll_speaker` will return a dictionary whose keys are the names of the properties which have been updated.
-
-`poll_speaker` arguments:
-
-| argument      | required   | default value | comment |
-| ------------- | ---------- | ------------- | ------- |
-| `timeout`     | *Optional* | `10`          |  `timeout` is in seconds. If no change has been made since the last poll when you call `poll_speaker`, the method will wait for changes during `timeout` seconds for new changes. If there is a change before the end of the timeout, `poll_speaker` will return them immediately and stop monitoring changes. If no changes are made, the method will return an empty dictionary.  ⚠️ the real timeout is `timeout`+ 0.5 seconds. The speaker will wait for `timeout` seconds before returning an empty dictionary if no changes are made. Therefore it is necessary to add a small margin in the python function to account for processing/networking time. Please submit an issue if you feel that this parameter needs tweaking. |
-| `song_status` | *Optional* | `False`    | **Deprecated**, please use `poll_song_status` instead |
-| `poll_song_status` | *Optional* | `False` |if `poll_song_status` if set to `True`, it will poll the song status (how many miliseconds of the current song have been played so far). If a song is playing and `poll_song_status` is set to `True`, `poll_speaker` will return almost imediately since `song_status` is updated at each second. This is forcing you to poll agressively to get other events. By default it is set to `False` in order to track other events more efficiently. |
+Blocking:
 
 ```python
-my_speaker.poll_speaker(timeout=3) # example of a 3 seconds timeout
-# (output example) >>> {}  # it will return an empty dict if no changes were made
+from pykefcontrol import KefClient
 
-# no suppose you start playing a song
-my_speaker.poll_speaker(poll_song_satus=True) # timeout is 10 seconds by default
-# (output example) >>> {'song_info': {'title': 'Am I Wrong',
-#  'artist': 'Etienne de Crécy',
-#  'album': 'Am I Wrong',
-#  'cover_url': 'https://some-url/some-image.jpg'},
-# 'song_length': 238000,
-# 'status': 'playing',
-# 'song_status': 26085}
-#
-# -> in this case it returns a dictionary with the keys "song_info" , 
-# "song_length", "status" and "song_status" containing information about the new song
-
-# now suppose you change the volume to 32
-my_speaker.poll_speaker(poll_song_satus=True)
-# (output example) >>> {'song_status': 175085, 'volume': 32}
-#
-# -> in this case it returns both "song_status" (because the song kept playing), 
-# and "volume" because you updated the volume
-
-# if you do not want to poll the song status
-my_speaker.poll_speaker()
-# (output example) >>> {'volume': 32}
-```
-All the possible keys of the dictionary are:
- `source`, `song_status`, `volume`, `song_info`, `song_length`, `status`, `speaker_status`, `device_name`, `mute` and `other`.
-`other` contains some of the speaker-specific information that might have changed, but are not properties of either `KefConnector` or `KefAsyncConnector`. 
-
-#### Advanced features
-This function is used internally by pykefcontrol and returns a JSON output with a lot of information. You might want to use them to get extra information such as the artwork/album cover URL, which does not have a dedicated function _yet_ in pykefcontrol.
-
-```python
-# Get currently playing media information
-my_speaker._get_player_data()
-# (output example) >>> {'trackRoles': {'icon': 'http://www.xxx.yyy.zzz:80/file/stream//tmp/temp_data_airPlayAlbum_xxxxxxxxx', 'title': 'I Want To Break Free', 'mediaData': {'resources': [{'duration': 263131}], 'metaData': {'album': 'Greatest Hits', 'artist': 'Queen'}}}, 'playId': {'systemMemberId': 'kef_one-xxxxxxxx', 'timestamp': 676181357}, 'mediaRoles': {'audioType': 'audioBroadcast', 'title': 'AirPlay', 'doNotTrack': True, 'type': 'audio', 'mediaData': {'resources': [{'mimeType': 'audio/unknown', 'uri': 'airplay://'}], 'metaData': {'serviceID': 'airplay', 'live': True, 'playLogicPath': 'airplay:playlogic'}}}, 'state': 'playing', 'status': {'duration': 263131, 'playSpeed': 1}, 'controls': {'pause': True, 'next_': True, 'previous': True}}
-
+with KefClient("192.168.1.20") as speaker:
+    speaker.power_on()
+    speaker.set_volume(30)
+    print(speaker.get_player_state().track)
 ```
 
-## 🕵️ Specificity of `KefAsyncConnector`
-
-Pykefcontrol offers an **asynchronous connector** with the same feature set as the synchronous connector. However, there are a few changes in the property setters. You can no longer use `my_speaker.volume = 28` to set a property. You have to use the setter like so: `await my_speaker.set_volume(28)`.
-
-The actions you make with `KefAsyncConnector` should be embedded in an async function. Here is a quick example :
+Asynchronous:
 
 ```python
 import asyncio
-from pykefcontrol.kef_connector import KefAsyncConnector
+from pykefcontrol import KefAsyncClient
 
-# Define an async function
 async def main():
-  my_speaker = KefAsyncConnector("192.168.yyy.zz")
-  # Get speaker name
-  print(await my_speaker.speaker_name)
-  # Get volume
-  print(await my_speaker.volume)
+    async with KefAsyncClient("192.168.1.20") as speaker:
+        await speaker.power_on()
+        await speaker.set_volume(30)
+        print((await speaker.get_player_state()).track)
 
-  # Turn on speaker
-  await my_speaker.power_on()
-  # Toggle play/pause
-  await my_speaker.toggle_play_pause()
-
-  # Set volume
-  # Please read through to see precision about setters
-  await my_speaker.set_volume(28)
-  # Set source
-  await my_speaker.set_source("bluetooth")
-  # Set status
-  await my_speaker.set_status("powerOn")
-
-  # To avoid warning about an unclosed session
-  # once your program is over, run:
-  await my_speaker._session.close()
-  # This is not mandatory. But if you do not close 
-  # the session, you will have a warning.
-
-# Get loop
-loop = asyncio.get_event_loop()
-# Run main function in async context
-loop.run_until_complete(main())
+asyncio.run(main())
 ```
-### Renaming of property setters
-`KefAsyncConnector` has the same property and methods as its synchronous counterpart `KefConnector`. You can access the same properties and methods in an asynchronous context by using `await my_speaker.property` or `await my_speaker.method()`. For the list of available properties and methods, read [Available features](#available-features).
 
-**However**, to have an asynchronous property setter, the way to set properties has changed. You should use the specific setter. For a `property`, the setter is called `set_property`. As you can see in the example script above, to set the volume, use `set_volume`. Here is the list of properties with such setters : 
+`KefClient` is the blocking twin of `KefAsyncClient`: same method names, without `async`/`await`.
+The only differences are `aclose()` which is `close()`, and async iterators (`watch()`, `events()`) which
+are plain iterators. The constructor does **no network I/O**; the connection is made on the first request
+(or by `connect()`). All examples below are written for the async client.
 
-- volume : use `set_volume`
-- state : use `set_state`
-- source : use `set_source`
- 
-## 📜 Changelog
-- **version 0.9.3**
-  - Fix LS60 support: `setData` now uses POST for LS60 (matches LS50WII / LSXII behavior).
-- **version 0.9.2**
-  - Add LSX II support: `setData` now uses POST for LSX II (matches LS50WII / LSXIILT behavior).
-- **version 0.9.1**
-  - Fix issue with new LSXIILT firmware: `setData` now uses POST for LSXIILT.
-- **version 0.9**
-  - Switch from GET to POST for `setData` on LS50WII.
-- **version 0.8**
-  - Add codec information and WiFi monitoring properties.
-  - Add generic API methods.
-- **version 0.7.1**
-  - Fix issue with async version of `get_speaker_model` and `get_firmware_version`.
-- **version 0.7**
-  - Now **compatible with LSX II and LS60** !
-  - Add `speaker_model` and `firmware_version` properties.
-  - ⚠️ `song_status` argument of `poll_speaker` is now deprecated. Please use `poll_song_status`
-- **Version 0.6.2**
-  - modify `poll_speaker` to prevent falling if `song_status` is not properly defined by the speaker
-  - regenerate the queue_id if `song_status` was changed before the queue timeout.
-- **Version 0.6.1**
-  - Add parameter `song_status` to the method `poll_speaker`. 
+### Discovery
 
-- **Version 0.6**
-  - Add method `poll_speaker` that returns the last changes made to properties since the last poll.
-  
-- **Version 0.5**
-  - Add option to pass existing `session=aiohttp.ClientSession()` to `KefAsyncConnector`.
-  - Add method `close_session` and `resurect_session`
+With the `discovery` extra installed:
 
-- **Version 0.4**
-  - Add `KefAsyncConnector`. A class with the same functionality as `KefConnector` but with async properties and methods.
+```python
+from pykefcontrol.discovery import discover, discover_blocking
 
-- **Version 0.3**
-  - ⚠️ _Breaking change :_ `get_song_information()` now returns a dictionary, no longer a tuple
-  - add property `mac_address` that returns the MAC address of the speaker as a string
-  - add property `speaker_name` that returns the friendly speaker name as defined in the KEF Connect app onboarding process
+for found in await discover(timeout=3.0):       # or discover_blocking()
+    print(found.host, found.name, found.marketing_name, found.firmware)
+```
 
-- **Version 0.2**
-  - correct a bug in `power_on` and `shutdown` 
+`parse_service_info()` in the same module turns mDNS records (`_kef-info._tcp`) into a
+`DiscoveredSpeaker` without any extra dependency, which is what a zeroconf config flow needs.
 
-- **Version 0.1**
-  - first version
+### Command line
+
+The package installs a `pykefcontrol` command (also `python -m pykefcontrol`):
+
+```shell
+pykefcontrol discover                  # needs the [discovery] extra
+pykefcontrol info 192.168.1.20         # model, firmware, transport (http/https), network
+pykefcontrol state 192.168.1.20
+pykefcontrol watch 192.168.1.20        # live updates
+pykefcontrol volume 192.168.1.20 30
+pykefcontrol power 192.168.1.20 on --source optical
+pykefcontrol get 192.168.1.20 settings:/kef/host/modelName   # raw API
+pykefcontrol --help
+```
+
+**Testing a model or firmware?** `pykefcontrol diag <ip>` probes HTTP (port 80) and HTTPS (port 4430),
+the certificate, identity values, EQ format and the event queue, and prints a JSON report. Add `--write`
+to also test writes (it re-writes the current volume, so nothing audible changes). Please attach the
+report to bug reports.
+
+## Feature tour
+
+### Power and source
+
+```python
+from pykefcontrol import Source
+
+await speaker.get_status()            # SpeakerStatus.POWER_ON / STANDBY / ...
+await speaker.is_on()
+await speaker.power_on()              # wakes up on the last known source (else Wi-Fi)
+await speaker.power_on(Source.OPTICAL)
+await speaker.set_source("tv")        # strings are accepted everywhere an enum is
+await speaker.get_source()            # Source.STANDBY when the speaker is off
+await speaker.power_off()
+```
+
+Like the official app, `power_on()` selects a real source: selecting a source wakes the speaker.
+`reboot()` and `factory_reset()` also exist (the latter makes the speaker leave your network).
+
+### Volume and mute
+
+```python
+await speaker.set_volume(30)                 # 0-100
+await speaker.get_volume()
+await speaker.volume_up()                    # by the speaker's volume step, returns the new volume
+await speaker.volume_down(step=5)
+await speaker.set_mute(True)                 # a real mute: the volume is left untouched
+await speaker.get_mute()
+await speaker.set_default_volume(25, source=Source.TV)   # volume applied on wake-up (experimental)
+```
+
+### Playback
+
+```python
+from pykefcontrol import PlayMode
+
+await speaker.play()          # idempotent: does nothing if already playing
+await speaker.pause()         # idempotent: does nothing if not playing
+await speaker.play_pause()    # toggle
+await speaker.stop()
+await speaker.next_track()
+await speaker.previous_track()
+await speaker.seek(90_000)    # milliseconds
+await speaker.set_play_mode(PlayMode.SHUFFLE_REPEAT_ALL)
+await speaker.get_play_mode()
+
+player = await speaker.get_player_state()
+player.state, player.is_playing, player.duration_ms
+player.track                  # Track: title, artist, album, cover_url, codec, sample_rate, ...
+player.controls               # PlayerControls: which commands the current source allows
+await speaker.get_play_position()   # ms
+```
+
+`PlayMode.from_flags(shuffle=True, repeat="all")` builds a mode from flags, and the mode has `.shuffle`
+and `.repeat` properties.
+
+`play_url(url, title=None)` plays an audio stream URL (internet radio) like the app's custom radios.
+It is **experimental**.
+
+### Device information and capabilities
+
+```python
+info = await speaker.get_device_info()    # name, model, serial_number, mac_address, firmware, ...
+await speaker.get_name(); await speaker.set_name("Living room")
+await speaker.get_mac_address()
+net = await speaker.get_network_info()    # wired / wireless interface, SSID, signal_level, ip_address
+
+caps = await speaker.get_capabilities()   # detected once, then cached
+caps.model                                # SpeakerModel.LS50_WIRELESS_II, ...
+caps.sources                              # sources this model offers
+caps.supports(Feature.EQ_PROFILE)         # from pykefcontrol import Feature
+```
+
+For an unknown (future) model, `supports()` returns `True` and lets the speaker decide.
+
+### State snapshot
+
+```python
+state = await speaker.get_state()
+state.status, state.source, state.volume, state.muted, state.play_mode
+state.player, state.track, state.name
+state.position_ms, state.position_updated_at   # extrapolate the position from these
+state.is_on
+```
+
+`get_state(extra_paths=[...])` also reads additional API paths into `state.extra`.
+`SpeakerState` is an immutable dataclass; use `state.replace(...)` to derive a copy.
+
+### Live updates with `watch()`
+
+`watch()` is the recommended way to follow a speaker: it keeps one long-poll request open on the
+speaker's event queue (push, no polling interval) and yields a fresh `SpeakerState` on every change.
+
+```python
+async for state in speaker.watch():
+    if state is None:
+        print("speaker unavailable")
+    else:
+        print(state.volume, state.track)
+```
+
+- The first item is a full snapshot, then a new state is yielded after each change.
+- `None` means the speaker is **unavailable** (also yielded first if it is offline when `watch()` starts).
+  The client then reconnects by itself with exponential back-off (1 s up to 30 s), re-subscribes, and
+  yields a full snapshot again when it is back. An expired event queue is recreated silently.
+  Pass `reconnect=False` to get exceptions instead.
+- Each `watch()` uses its own event queue, so several consumers can watch the same client. The
+  iteration ends when the client is closed.
+- `track_position=True` also follows the play time (one event per second while playing). By default the
+  position is only refreshed when the player changes; extrapolate from `position_ms` and
+  `position_updated_at`.
+- `extra_paths=[...]` follows additional API paths, exposed in `state.extra`.
+
+The blocking client offers the same thing as a plain `for state in speaker.watch():` loop.
+
+For lower-level control, use the event queue directly:
+
+```python
+queue = speaker.event_queue()                                    # no I/O yet
+created = await queue.subscribe([paths.VOLUME, paths.MUTE])      # True if a new queue was created
+events = await queue.poll(timeout=25)                            # list[Event], [] on timeout
+async for event in speaker.events([paths.VOLUME]):               # own queue, subscribe + poll forever
+    print(event.path, event.value)
+```
+
+These raise on errors (no automatic reconnection). `poll()` returns every event, in arrival order. The
+speaker does not replay current values: read the state after subscribing.
+
+### Equalizer / DSP
+
+```python
+from pykefcontrol import BassExtension
+
+profile = await speaker.get_eq_profile()     # EqProfile, in physical units (dB, Hz...)
+profile.treble, profile.bass_extension, profile.desk_mode, profile.subwoofer_gain
+
+await speaker.update_eq_profile(treble=1.5, bass_extension=BassExtension.EXTRA)  # read-modify-write
+await speaker.set_eq_profile(profile.replace(wall_mode=True))                    # whole profile
+await speaker.reset_eq_profile()                                                  # factory DSP settings
+
+await speaker.get_eq_version()               # 2 (values) or 1 (indices, old LS50 Wireless II firmware)
+descriptors = await speaker.get_eq_descriptors()   # ranges/choices advertised by the speaker (v2)
+```
+
+The profile format differs between firmware generations (v1 stores indices, v2 stores real values); the
+library detects it and converts transparently, so your code always sees an `EqProfile`. Values are
+validated before being written (`validate=False` to skip).
+
+### Settings catalogue
+
+Most speaker settings are described declaratively in `Settings` and read/written with typed, validated
+calls:
+
+```python
+from pykefcontrol import Settings, StandbyMode
+
+await speaker.get_setting(Settings.STARTUP_TONE)                    # bool
+await speaker.set_setting(Settings.STARTUP_TONE, False)
+await speaker.set_setting(Settings.STANDBY_MODE, StandbyMode.MINUTES_30)
+await speaker.set_setting(Settings.MAXIMUM_VOLUME, 80)              # range-checked
+await speaker.get_setting(Settings.FIRMWARE_VERSION)                # read-only settings raise on write
+```
+
+The catalogue covers identity, volume limits and defaults, standby and wake-up behaviour, LEDs, top panel,
+USB charging, cable mode, subwoofer and master channel, IR remote, favourite/EQ buttons, scheduled reboot,
+language, and more. Browse `Settings` (and `Setting.description`) in your editor or REPL. A `Setting` can
+be unsupported by your model or firmware; the speaker then answers with `KefApiError`.
+
+### Raw API
+
+For anything not covered above, the generic calls talk to the speaker's JSON API directly:
+
+```python
+from pykefcontrol import paths, ValueType
+
+await speaker.get_data(paths.VOLUME)                      # raw typed value: {"type": "i32_", "i32_": 30}
+await speaker.get_value("settings:/mediaPlayer/mute")     # decoded: False
+await speaker.set_value(paths.VOLUME, ValueType.I32, 35)
+await speaker.activate("powermanager:goReboot")           # trigger an action node
+await speaker.get_rows(paths.PLAY_QUEUE, 0, 19)          # list rows of a container
+```
+
+`pykefcontrol.paths` holds the known API path constants. `set_data()` is the untyped variant of
+`set_value()`.
+
+### Bluetooth
+
+```python
+state = await speaker.get_bluetooth_state()   # connected, discoverable, pairable, pairing_code...
+await speaker.bluetooth_pairing()             # make the speaker discoverable
+await speaker.bluetooth_disconnect()
+```
+
+## Connection and security
+
+Recent firmware serves its API over **HTTPS on port 4430**, with a certificate issued by a private KEF
+root CA (the library embeds it, as `KEF_ROOT_CA_PEM`, and trusts nothing else for the speaker). Older
+firmware only speaks plain HTTP on port 80. Write requests to the HTTPS API must be signed with an HMAC
+`Authorization` header; the library creates a user on the speaker and signs requests automatically.
+
+```python
+KefAsyncClient(host, transport="auto")    # default: try HTTPS, fall back to HTTP
+KefAsyncClient(host, transport="https")   # HTTPS only
+KefAsyncClient(host, transport="http")    # HTTP only (legacy firmware, troubleshooting)
+speaker.is_secure                          # True / False, None before the first request
+```
+
+In `auto` mode the client keeps retrying HTTPS periodically while it uses HTTP.
+
+An honest note on security: the default credentials are the same for every user of the official app, and
+the speaker accepts new users without authentication. The signing scheme therefore identifies *clients* to
+the speaker; it is **not a security boundary on your LAN**. Anyone on your network can control your
+speaker, as with the official app. Keep it off untrusted networks.
+
+Other options:
+
+- `verify_ssl=False` disables certificate verification (troubleshooting only).
+- `credentials=Credentials(username, password)` uses a different speaker user.
+- `timeout=` (seconds, default 10) sets the timeout of ordinary requests; `http_port=`/`https_port=`
+  override the ports.
+- `model="LSXII"` tells the client the model up front (skips detection for capabilities).
+
+**IP addresses vs host names.** Speaker certificates only list IP addresses. With an IP address the
+certificate is fully verified (chain and address). With a host name the library still verifies the chain
+against the KEF CA but skips the hostname match. An IP address (ideally reserved in your DHCP server)
+is recommended.
+
+**Blocking calls in the event loop.** Building an `ssl.SSLContext` loads certificates from disk/memory,
+which some frameworks (Home Assistant) flag as blocking I/O. The async client builds it in an executor
+for you (and caches it); if you prefer to control this, build it yourself and pass it in:
+
+```python
+ctx = await loop.run_in_executor(None, create_ssl_context)   # from pykefcontrol import create_ssl_context
+speaker = KefAsyncClient(host, ssl_context=ctx)
+```
+
+## Home Assistant and other frameworks
+
+- Inject the shared `aiohttp.ClientSession`: `KefAsyncClient(host, session=session)`. A session you
+  provide is **never closed** by the library; only a session it created itself is.
+- Use `get_state()` for the first refresh and `watch()` in a background task for `local_push` updates;
+  a `None` from `watch()` means "unavailable".
+- Use `get_capabilities().sources` instead of a hard-coded source list.
+- Build the SSL context in an executor (see above) if your framework forbids blocking calls in the loop.
+- `pykefcontrol.discovery.parse_service_info()` supports zeroconf-based config flows.
+
+## Errors
+
+Every exception derives from `KefError`:
+
+```
+KefError
+├── KefConnectionError      speaker unreachable (refused, DNS, TLS...)
+│   └── KefTimeoutError     no answer in time
+├── KefAuthError            credentials rejected
+├── KefApiError             HTTP error status (.status, .message, .path)
+├── KefProtocolError        unintelligible answer
+└── KefUnsupportedError     feature not supported by this speaker / firmware
+```
+
+Invalid arguments (a volume of 150, a wrongly-typed setting value) raise `ValueError` / `TypeError`
+before anything is sent.
+
+## Development
+
+The project uses [uv](https://docs.astral.sh/uv/) (and a Nix flake: `nix develop` provides uv).
+
+```shell
+uv sync                         # create the environment with dev dependencies
+uv run pytest                   # tests
+uv run ruff check . && uv run ruff format --check .
+uv run mypy                     # strict typing
+uv run python scripts/gen_sync.py          # regenerate the sync client
+uv run python scripts/gen_sync.py --check  # what CI runs: fail if it is stale
+```
+
+The asynchronous client in `pykefcontrol/_async/` is the single source of truth: the blocking client in
+`pykefcontrol/_sync/` is **generated** from it by `scripts/gen_sync.py`. Never edit `_sync/client.py` or
+`_sync/transport.py` by hand; edit the async version and regenerate.
+
+## License
+
+MIT, see [LICENSE](LICENSE). pykefcontrol is an independent project, not affiliated with or endorsed by
+KEF.
