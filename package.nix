@@ -3,28 +3,56 @@
   buildPythonPackage,
   hatchling,
   aiohttp,
-  requests,
+  urllib3,
+  zeroconf,
+  pytestCheckHook,
+  pytest-asyncio,
+  pytest-timeout,
+  trustme,
 }:
 
+let
+  pyproject = lib.importTOML ./pyproject.toml;
+in
 buildPythonPackage {
   pname = "pykefcontrol";
-  version = "0.9.3";
+  inherit (pyproject.project) version;
   pyproject = true;
 
-  src = lib.cleanSource ./.;
+  src = lib.fileset.toSource {
+    root = ./.;
+    fileset = lib.fileset.unions [
+      ./pyproject.toml
+      ./README.md
+      ./LICENSE
+      ./pykefcontrol
+      ./tests
+      ./scripts
+    ];
+  };
 
   build-system = [ hatchling ];
 
   dependencies = [
     aiohttp
-    requests
+    urllib3
+  ];
+
+  optional-dependencies.discovery = [ zeroconf ];
+
+  nativeCheckInputs = [
+    pytestCheckHook
+    pytest-asyncio
+    pytest-timeout
+    trustme
   ];
 
   pythonImportsCheck = [ "pykefcontrol" ];
 
   meta = {
-    description = "Python library for controlling KEF speakers (LS50W2, LSX2, LS60)";
+    description = "Control KEF W2-platform wireless speakers (LS50 Wireless II, LS60, LSX II, XIO, LS LUXE...)";
     homepage = "https://github.com/N0ciple/pykefcontrol";
     license = lib.licenses.mit;
+    mainProgram = "pykefcontrol";
   };
 }
