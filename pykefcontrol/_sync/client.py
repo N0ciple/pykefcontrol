@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import ssl
 import time
-from collections.abc import Iterator, Iterable, Mapping
+from collections.abc import Generator, Iterable, Mapping
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Self
@@ -567,7 +567,7 @@ class KefClient:
 
     def events(
         self, subscriptions: Iterable[str | Subscription], *, timeout: int = const.POLL_TIMEOUT
-    ) -> Iterator[Event]:
+    ) -> Generator[Event]:
         """Subscribe to ``subscriptions`` on a new queue and yield every event, forever.
 
         Low level: errors are raised (see :meth:`watch` for automatic reconnection).
@@ -584,7 +584,7 @@ class KefClient:
         extra_paths: Iterable[str] = (),
         track_position: bool = False,
         reconnect: bool = True,
-    ) -> Iterator[SpeakerState | None]:
+    ) -> Generator[SpeakerState | None]:
         """Yield a fresh :class:`SpeakerState` every time something changes on the speaker.
 
         This is the recommended way to follow a speaker (push updates, no polling

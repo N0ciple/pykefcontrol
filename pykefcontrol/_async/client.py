@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 import ssl
 import time
-from collections.abc import AsyncIterator, Iterable, Mapping
+from collections.abc import AsyncGenerator, Iterable, Mapping
 from datetime import UTC, datetime
 from types import TracebackType
 from typing import TYPE_CHECKING, Any, Self
@@ -565,7 +565,7 @@ class KefAsyncClient:
 
     async def events(
         self, subscriptions: Iterable[str | Subscription], *, timeout: int = const.POLL_TIMEOUT
-    ) -> AsyncIterator[Event]:
+    ) -> AsyncGenerator[Event]:
         """Subscribe to ``subscriptions`` on a new queue and yield every event, forever.
 
         Low level: errors are raised (see :meth:`watch` for automatic reconnection).
@@ -582,7 +582,7 @@ class KefAsyncClient:
         extra_paths: Iterable[str] = (),
         track_position: bool = False,
         reconnect: bool = True,
-    ) -> AsyncIterator[SpeakerState | None]:
+    ) -> AsyncGenerator[SpeakerState | None]:
         """Yield a fresh :class:`SpeakerState` every time something changes on the speaker.
 
         This is the recommended way to follow a speaker (push updates, no polling
