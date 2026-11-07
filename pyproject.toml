@@ -65,7 +65,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.sdist]
-include = ["pykefcontrol", "tests", "scripts", "README.md", "CHANGELOG.md", "MIGRATION.md", "LICENSE"]
+include = ["pykefcontrol", "tests", "scripts", "README.md", "CHANGELOG.md", "MIGRATION.md", "docs", "LICENSE"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pykefcontrol"]
