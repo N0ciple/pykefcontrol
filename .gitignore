@@ -130,3 +130,7 @@ dmypy.json
 
 # VScode specific
 .vscode/
+# Nix
+result
+result-*
+.direnv/
