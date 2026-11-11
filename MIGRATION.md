@@ -107,7 +107,7 @@ everything is a method on both clients.
 | `mac_address` (property) | `get_mac_address()` (also in `get_device_info().mac_address`) |
 | `speaker_name` (property) | `get_name()`; new `set_name(name)` |
 | `speaker_model` / `get_speaker_model()` (async) | `get_device_info().model` (a `SpeakerModel`) or `get_capabilities().model` |
-| `firmware_version` / `get_firmware_version()` (async) | `get_device_info().firmware` (parsed `FirmwareVersion`) or `.firmware_version` (raw string from the speaker). The old value was derived from the release text (e.g. `V27100`); it is available as `.release_text`. |
+| `firmware_version` / `get_firmware_version()` (async) | `get_device_info().firmware` (parsed `FirmwareVersion`) or `.firmware_version` (raw string from the speaker, `None` when unreadable). The old value was derived from the release text (e.g. `V27100`); it is available as `.release_text`. |
 | `get_wifi_information()` returns a dict (`signalLevel`, `ssid`, `frequency`, `bssid`) | `get_network_info().wireless`, a `NetworkInterface` with `signal_level`, `ssid`, `frequency`, `bssid`, `channel`. Also `.wired` and `.ip_address`. |
 | (none) | New: `get_capabilities()`, `reboot()`, `factory_reset()`, `get_bluetooth_state()`, EQ methods, `get_setting()` / `set_setting()` |
 

@@ -3,6 +3,14 @@
 All notable changes to this project are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.0.1] - 2026-11-11
+
+### Fixed
+
+- `DeviceInfo.firmware_version` is `None` when the speaker fills `settings:/kef/host/firmwareVersion`
+  with unreadable bytes (seen on LSX II firmware 3.1.141), and `hardware_version` is `None` when the
+  speaker reports the `0.0.0` placeholder. Use `DeviceInfo.firmware` for the firmware version.
+
 ## [1.0.0] - 2026-11-07
 
 Full rewrite. This release contains breaking changes, see the [migration guide](MIGRATION.md).
@@ -165,5 +173,6 @@ Bugs of 0.9.3 that no longer exist in the rewrite:
 
 - First version.
 
+[1.0.1]: https://github.com/N0ciple/pykefcontrol/compare/1.0.0...1.0.1
 [1.0.0]: https://github.com/N0ciple/pykefcontrol/compare/0.9.3...1.0.0
 [0.9.3]: https://github.com/N0ciple/pykefcontrol/releases/tag/0.9.3

@@ -198,7 +198,7 @@ async def test_device_info_with_product_code_model_name(client: Any, fake: FakeS
     assert info.model_name == "SP4025"
     assert info.model == SpeakerModel.LS50_WIRELESS_II  # from the release text
     assert info.firmware is not None and str(info.firmware).startswith("4.2.1")
-    assert info.firmware_version is not None  # raw (garbled) host value is kept as is
+    assert info.firmware_version is None  # the raw host value is unreadable
 
 
 async def test_device_info_firmware_from_version_only(client: Any, fake: FakeSpeaker) -> None:
@@ -481,3 +481,13 @@ async def test_injected_session_is_not_closed(fake: FakeSpeaker) -> None:
         assert not session.closed
         await c.aclose()  # closing twice is harmless
         assert not session.closed
+
+
+async def test_device_info_drops_placeholder_hardware_version(
+    client: Any, fake: FakeSpeaker
+) -> None:
+    fake.set("settings:/kef/host/hardwareVersion", typed("string_", "0.0.0"))
+    fake.set("settings:/kef/host/firmwareVersion", typed("string_", "1.2.3"))
+    info = await client.get_device_info()
+    assert info.hardware_version is None
+    assert info.firmware_version == "1.2.3"  # readable values are kept
