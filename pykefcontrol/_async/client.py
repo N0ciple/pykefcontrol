@@ -62,6 +62,19 @@ WATCHED_PATHS: tuple[str, ...] = (
 )
 
 
+def _readable(value: str | None) -> str | None:
+    """``value``, or ``None`` when the speaker filled it with garbage or a placeholder.
+
+    Seen on LS50 Wireless II and LSX II: ``settings:/kef/host/firmwareVersion`` holds
+    unprintable bytes (``420.390.\ufffd.070.0000``), ``hardwareVersion`` is ``0.0.0``.
+    """
+    if value is None or not value.isprintable() or "\ufffd" in value:
+        return None
+    if value.strip("0.") == "":
+        return None
+    return value
+
+
 class KefAsyncClient:
     """Control one KEF speaker (LS50 Wireless II, LS60, LSX II, LSX II LT, XIO, LS LUXE...).
 
@@ -206,9 +219,10 @@ class KefAsyncClient:
         model_name = await self._get_optional(Settings.MODEL_NAME)
         device_version = await self._get_optional(Settings.DEVICE_VERSION)
         release_text = await self._get_optional(Settings.RELEASE_TEXT)
-        firmware_version = await self._get_optional(Settings.FIRMWARE_VERSION)
         # settings:/version ("4.1.192.0x869cad1" on LS50WII 4.1) is the reliable source;
-        # settings:/kef/host/firmwareVersion holds MCU versions, sometimes unreadable.
+        # settings:/kef/host/firmwareVersion holds MCU versions, often unreadable.
+        raw_firmware = await self._get_optional(Settings.FIRMWARE_VERSION)
+        firmware_version = _readable(raw_firmware)
         firmware = FirmwareVersion.parse(device_version)
         model = SpeakerModel.from_model_name(model_name)
         if model == SpeakerModel.UNKNOWN and release_text:
@@ -219,7 +233,8 @@ class KefAsyncClient:
         name = await self._get_optional(Settings.DEVICE_NAME)
         serial_number = await self._get_optional(Settings.SERIAL_NUMBER)
         mac_address = await self._get_optional(Settings.MAC_ADDRESS)
-        hardware_version = await self._get_optional(Settings.HARDWARE_VERSION)
+        raw_hardware = await self._get_optional(Settings.HARDWARE_VERSION)
+        hardware_version = _readable(raw_hardware)
         if mac_address is None and serial_number is None and model_name is None:
             raise KefProtocolError(f"{self.host} does not look like a KEF speaker")
         self._model, self._firmware, self._detected = model, firmware, True

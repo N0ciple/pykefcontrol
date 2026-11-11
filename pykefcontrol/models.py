@@ -242,9 +242,9 @@ class DeviceInfo:
     serial_number: str | None
     mac_address: str | None
     firmware: FirmwareVersion | None  #: parsed firmware version, when recognisable
-    firmware_version: str | None  #: raw ``settings:/kef/host/firmwareVersion``
+    firmware_version: str | None  #: raw ``settings:/kef/host/firmwareVersion``, None if unreadable
     release_text: str | None  #: raw ``settings:/releasetext``
-    hardware_version: str | None
+    hardware_version: str | None  #: None when the speaker reports ``0.0.0``
 
 
 @dataclass(frozen=True, slots=True)
